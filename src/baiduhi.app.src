@@ -1,0 +1,12 @@
+{application, baiduhi,
+ [
+  {description, "Baidu Hi Client"},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, {baiduhi_app, []}},
+  {env, [{logger_logbasename, "E:/Works/erlang/baiduhi/log/hi"}]}
+ ]}.
