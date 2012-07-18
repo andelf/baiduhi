@@ -17,6 +17,25 @@
 %%%===================================================================
 
 
+'login#login'({V_Url, V_Time, V_Period, V_Code}, DynamicPassword) ->
+    Params = [{method, "login"},
+              {v_url, V_Url},
+              {v_time, V_Time},
+              {v_period, V_Period},
+              {v_code, V_Code}],
+    Timestamp = util:to_list(util:timestamp()),
+    Body = util:make_xml_bin(
+             {login, [], [{user, [{account, hi_state:get(username)},
+                                  {password, DynamicPassword},
+                                  {localtime, Timestamp},
+                                  {imversion, "2,1,0,1"}], []}]}),
+    {{login, "3.0", request, hi_state:seq()}, Params, Body}.
+
+'login#loginout'() ->
+    {{login, "1.0", request, hi_state:seq()},
+     [{method, "loginout"}],
+     ""}.
+
 %% VerifyCodeUnknown       = 0,
 %% VerifyCodeLogin			= 1,//登录验证码, uid=0
 %% VerifyCodeAddFriend		= 2,//添加好友
@@ -33,8 +52,6 @@
     {{security, "1.0", request, hi_state:seq()},
      [{method, "verify"}, {uid, 0}, {type, 1}, {lid, hi_state:get(username)}],
      ""};
-'security#verify'(add_friend) ->
-    'security#verify'(2, []);
 'security#verify'(delete_friend) ->
     'security#verify'(3, []);
 'security#verify'(join_group) ->
@@ -43,6 +60,8 @@
     'security#verify'(9, []).
 'security#verify'(tmp_session, Imid) ->
     'security#verify'(11, [{uid2, Imid}]);
+'security#verify'(add_friend, Imid) ->
+    'security#verify'(2, [{friend, Imid}]);
 'security#verify'(Type, AdditonalHeader) ->
     {{security, "1.0", request, hi_state:seq()},
      [{method, "verify"}, {uid, hi_state:uid()}, {type, Type}, {lid, hi_state:get(username)}|AdditonalHeader],
@@ -59,7 +78,7 @@
        {add_ack, [{time, util:to_list(util:timestamp())},
                   {agree, util:to_list(Agree)},
                   {imid, util:to_list(Imid)},
-                  {request_note, util:to_list(RequestNote)}],
+                  {request_note, RequestNote}],
         []})}.
 
 'friend#add'(Imid) ->
@@ -143,25 +162,11 @@
        {login, [], [{user, [{status, util:to_list(Status)},
                             {localeid, "2052"},
                             {imversion, "2,1,0,1"},
-                            {pc_code, "BDIMXV2-O_1-C_2-D_3-M_4-V_5"}], []}]})}.
-
-%% 'user#get'(InfoAssoc) ->
-%%     {{user, "1.0", request, hi_state:seq()},
-%%      [{method, "get"},
-%%       {uid, hi_state:uid()}],
-%%      []}.
-
-
-%% BUG: can't work
-%% 'user#set_status'(Type) ->
-%%     'user#set_status'(Type, "").
-%% 'user#set_status'(Type, Remark) ->
-%%     {{user, "2.0", request, hi_state:seq()},
-%%      [{method, "set_status"},
-%%       {uid, hi_state:uid()},
-%%       {status_type, Type},
-%%       {status_remark, Remark}],
-%%      []}.
+                            {pc_code, "BDIMXV2-O_1-C_9-D_3-M_4-V_5"}], []}]})}.
+	%% ,LocaleSimpleChinese = 2052 /**< 简体中文.*/
+	%% ,LocaleTraditionalChinese= 1028 /**< 繁体中文.*/
+	%% ,LocaleUsEnglish = 1033 /**< 美国英语.*/
+	%% ,LocaleJapanese = 1041 /**< 日文 >*/
 
 
 %% contact

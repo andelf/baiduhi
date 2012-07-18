@@ -67,9 +67,7 @@ stop() ->
 %%--------------------------------------------------------------------
 init(Config) ->
     {username, Username} = lists:keyfind(username, 1, Config),
-    %% {password, Password} = lists:keyfind(password, 1, Config),
     logger:log(normal, "username=~s password=******", [Username]),
-    hi_state:set(username, Username),
     {ok, Sock} = gen_tcp:connect('123.125.113.37', 443, [{active, false}, binary]),
     {ok, #state{sock=Sock, username=Username, config=Config, stage=initial}, 0}.
 
@@ -125,6 +123,7 @@ handle_info(timeout, #state{sock=Sock, config=Config, stage=initial} = State) ->
     ok = gen_tcp:controlling_process(Sock, hi_receiver:get_pid()),
     hi_receiver:set_client(self()),
     hi_receiver:set_sock(Sock),
+    hi_state:set(username, Username),           %set first
     ok = inet:setopts(Sock, [{active, true}]),
     S1Data = protocol:make_stage_data(stage1),
     gen_tcp:send(Sock, protocol:make_packet(stage, ?CT_FLAG_CON_S1, S1Data)),
@@ -156,26 +155,24 @@ handle_info({stage4, {Seed, _KeepAliveSpace, S4Data}},
 handle_info({impacket, {{security, _, ack, _}, _, Xml}},
             #state{config=Config,
                    stage=on_security_response} = State) ->
-    {username, Username} = lists:keyfind(username, 1, Config),
     {password, Password} = lists:keyfind(password, 1, Config),
     {seed, Seed} = lists:keyfind(seed, 1, Config),
-    {Doc, _} = xmerl_scan:string(Xml),
-    [#xmlAttribute{value=V_Url}] = xmerl_xpath:string("//verify/@v_url", Doc),
-    [#xmlAttribute{value=V_Time}] = xmerl_xpath:string("//verify/@v_time", Doc),
-    [#xmlAttribute{value=V_Period}] = xmerl_xpath:string("//verify/@v_period", Doc),
-    [#xmlAttribute{value=V_Code}] = xmerl_xpath:string("//verify/@v_code", Doc),
-    Params = [{method, "login"}, {v_url, V_Url}, {v_time, V_Time},
-              {v_period, V_Period}, {v_code, V_Code}],
-    Timestamp = util:to_list(util:timestamp()),
-    Body = util:make_xml_bin(
-             {login, [], [{user, [{account, Username},
-                                  {password, protocol:build_dynamic_password(Password, Seed)},
-                                  {localtime, Timestamp},
-                                  {imversion, "2,1,0,1"}], []}]}),
-    self() ! {sendpkt, {{login, "3.0", request, hi_state:seq()}, Params, Body}},
+    [{verify, RequestParams, _}] = xmerl_impacket:xml_to_tuple(Xml),
+    {v_url, V_Url} = lists:keyfind(v_url, 1, RequestParams),
+    {v_time, V_Time} = lists:keyfind(v_time, 1, RequestParams),
+    {v_period, V_Period} = lists:keyfind(v_period, 1, RequestParams),
+    case lists:keyfind(v_code, 1, RequestParams) of
+        {v_code, V_Code} ->
+            logger:log(normal, "v_code: ~s", [V_Code]);
+        false ->
+            io:format("v_code url: http://vcode.im.baidu.com/cgi-bin/genimg?~s~n", [V_Url]),
+            V_Code = io:get_chars("plz input code>", 4)
+    end,
+    logger:log(normal, "v_url:~p v_code:~p", [V_Url, V_Code]),
+    self() ! {sendpkt, protocol_helper:'login#login'({V_Url, V_Time, V_Period, V_Code}, protocol:build_dynamic_password(Password, Seed))},
     {noreply, State#state{stage=on_login_login_response}};
 %% user:login_ready
-handle_info({impacket, {{login, _, ack, _}, _, Xml}},
+handle_info({impacket, {{login, _, ack, _}, [{method,"login"},{code,200}|_], Xml}},
             #state{stage=on_login_login_response} = State) ->
     {Doc, _} = xmerl_scan:string(Xml),
     [#xmlAttribute{value=StrUid}] = xmerl_xpath:string("//login/@imid", Doc),
@@ -186,6 +183,10 @@ handle_info({impacket, {{login, _, ack, _}, _, Xml}},
     %% empty config state, for safty
     {noreply, State#state{stage=on_login_ready_response,
                           config=[], uid=Uid}};
+handle_info({impacket, {{login, _, ack, _}, [{method,"login"},{code,Code}|_], _}},
+            #state{stage=on_login_login_response} = State) ->
+    io:format("~w~n", [{code, Code}]),
+    {stop, normal, State};
 %% login ready!
 handle_info({impacket, {{user, _, ack, _}, [{method,"login_ready"},{code,200}|_], _}},
             #state{sock=Sock, stage=on_login_ready_response} = State) ->
@@ -210,7 +211,7 @@ handle_info({impacket, {{friend, _, notify, _}, [{method,"add_notify"}|_], Xml}}
     [{add_notify, Attrs, _}] = xmerl_impacket:xml_to_tuple(Xml),
     {imid, From} = lists:keyfind(imid, 1, Attrs),
     {request_note, RequestNote} = lists:keyfind(request_note, 1, Attrs),
-    logger:log(normal, "friend request! from:~w note:~ts", [From, RequestNote]),
+    logger:log(normal, "friend request! from:~p note:~s", [From, RequestNote]),
     case RequestNote of
         "1396730" ++ _ ->
             self() ! {sendpkt, protocol_helper:'friend#add_ack'(1, From)},
