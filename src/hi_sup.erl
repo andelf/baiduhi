@@ -59,16 +59,16 @@ init([]) ->
 
     SupFlags = {RestartStrategy, MaxRestarts, MaxSecondsBetweenRestarts},
 
-    Restart = permanent,
+    %% Restart = permanent,
 
-    Shutdown = 2000,
-    Type = worker,
+    %% Shutdown = 2000,
+    %% Type = worker,
 
     %% AChild = {'AName', {'AModule', start_link, []},
     %%           Restart, Shutdown, Type, ['AModule']},
-    Children = [?CHILD(hi_receiver, worker),
+    Children = [?CHILD(hi_state, worker),
+                ?CHILD(hi_receiver, worker),
                 ?CHILD(hi_heartbeat, worker),
-                ?CHILD(hi_state, worker),
                 ?CHILD(hi_client, worker)],
     {ok, {SupFlags, Children}}.
 

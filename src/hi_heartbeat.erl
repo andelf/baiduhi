@@ -116,7 +116,7 @@ handle_cast(_Msg, State) ->
 %%--------------------------------------------------------------------
 handle_info(timeout, #state{sock=Sock, timeout=Timeout} = State) ->
     logger:log(debug, "heartbeat!"),
-    gen_tcp:send(Sock, protocol:make_packet(heartbeat)),
+    ok = gen_tcp:send(Sock, protocol:make_packet(heartbeat)),
     receive
         heartbeat ->
             logger:log(debug, "heartbeat ack!"),

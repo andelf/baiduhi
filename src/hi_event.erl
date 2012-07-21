@@ -11,6 +11,7 @@
 %% API
 -export([start_link/0, add_handler/2, delete_handler/2]).
 
+-export([login_ready/0]).
 -export([xxxx/1]).
 
 -define(SERVER, ?MODULE).
@@ -31,6 +32,9 @@ delete_handler(Handler, Args) ->
 %% API functions
 xxxx(What) ->
     gen_event:notify(?SERVER, {xxx, What}).
+
+login_ready() ->
+    gen_event:notify(?SERVER, login_ready).
 
 %%%===================================================================
 %%% Internal functions

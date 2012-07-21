@@ -191,6 +191,7 @@ handle_info({impacket, {{login, _, ack, _}, [{method,"login"},{code,Code}|_], _}
 handle_info({impacket, {{user, _, ack, _}, [{method,"login_ready"},{code,200}|_], _}},
             #state{sock=Sock, stage=on_login_ready_response} = State) ->
     logger:log(normal, "login ready!"),
+    hi_event:login_ready(),
     hi_heartbeat:set_sock(Sock),
     hi_heartbeat:set_timeout(40000),
     self() ! {sendpkt, protocol_helper:'group#get_list'()},
@@ -353,10 +354,12 @@ handle_info({impacket, {{msg, _, notify, _}, [{method,"msg_notify"}|Params], Xml
 %% message that no need to ack
 handle_info({impacket, {{contact, _, notify, _}, [{method, "notify"}|_Params], Xml}},
             State) ->
-    {Doc, _} = xmerl_scan:string(Xml),
-    [#xmlAttribute{value=Who}] = xmerl_xpath:string("//contact/@imid", Doc),
-    logger:log(normal, "contact:notify imid:~s ~s", [Who, Xml]),
+    [{contact, Params, []}] = xmerl_impacket:xml_to_tuple(Xml),
+    %% {Doc, _} = xmerl_scan:string(Xml),
+    %% [#xmlAttribute{value=Who}] = xmerl_xpath:string("//contact/@imid", Doc),
+    logger:log(normal, "contact:notify ~p", [Params]),
     {noreply, State};
+
 handle_info({impacket, {{msg, _, notify, _}, [{method, "msg_ack_notify"}|_], _}}, State) ->
     logger:log(normal, "msg:msg_ack_notify. ignore"),
     {noreply, State};

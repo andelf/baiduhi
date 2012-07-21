@@ -25,7 +25,9 @@ get_env(logger_logdir) ->
 get_env(logger_logbasename) ->
     %%{ok, "/media/winE/Works/erlang/baiduhi/log/hi"};
     %% {ok, "E:/Works/erlang/baiduhi/log/hi"};
-    application:get_env(baiduhi, logger_logbasename);
+    %% {logger_logbasename, }
+    {ok, "./log/hi"};
+
 get_env(logger_status) ->
     {ok, [{all, true}]};
 get_env(max_logfile_size) ->

@@ -8,5 +8,5 @@
                   stdlib
                  ]},
   {mod, {baiduhi_app, []}},
-  {env, [{logger_logbasename, "E:/Works/erlang/baiduhi/log/hi"}]}
+  {env, []}
  ]}.
