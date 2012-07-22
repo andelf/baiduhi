@@ -27,6 +27,22 @@ start() ->
 stop() ->
     application:stop(baiduhi).
 
+
+set_info(What, Value) ->
+    set_info([{What, util:to_list(Value)}]).
+set_info(Infos) ->
+    hi_client:sendpkt_async(protocol_helper:'user#set'(Infos)),
+    receive
+        {impacket, {{user, _, ack, _}, [{method, "set"}, {code, Code}|_], _Xml}} ->
+            case Code of
+                200 ->
+                    ok;
+                Other ->
+                    {error, Other}
+            end
+    end.
+
+
 send_single_message(To, Message) ->
     send_msg(1, To, Message).
 

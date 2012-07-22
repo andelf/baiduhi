@@ -116,13 +116,13 @@
 %% sns_space_visible="0/1"
 %% sns_tieba_visible="0/1"
 %% sns_iknow_visible="0/1"
-'user#set'(InfoAssoc) ->
+'user#set'(Infos) ->
     {{user, "2.5", request, hi_state:seq()},
      [{method, "set"},
       {uid, hi_state:uid()}],
      util:make_xml_bin(
        {user, [],
-        [{account, InfoAssoc, []}]
+        [{account, Infos, []}]
        })}.
 
 %% baiduid;
