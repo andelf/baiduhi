@@ -9,11 +9,13 @@
 -module(baiduhi).
 
 %% API
--export([start/0, stop/0]).
+%% -export([start/0, stop/0]).
 
--export([send_single_message/2, send_group_message/2, send_mchat_message/2]).
--export([query_contact/1, query_contacts/1, query_contact/2, query_contacts/2]).
--export([query_online/0]).
+%% -export([send_single_message/2, send_group_message/2, send_mchat_message/2]).
+%% -export([query_contact/1, query_contacts/1, query_contact/2, query_contacts/2]).
+%% -export([query_online/0]).
+
+-compile([export_all]).
 
 %%%===================================================================
 %%% API
@@ -59,26 +61,9 @@ query_contacts(Imids, Fields) ->
                            Contacts)}
     end.
 
+%% query_online all online id
 query_online() ->
     hi_client:sendpkt_async(protocol_helper:'contact#queryonline'()),
-    receive
-        {impacket, {_, [{method, "queryonline"}, {code, Code}|_], Xml}=IMPacket} ->
-            [{result, [{list, ImidStr}], []}] = xmerl_impacket:xml_to_tuple(Xml),
-            Imids = lists:map(fun list_to_integer/1,
-                              string:tokens(ImidStr, ",")),
-            %%io:format("~p~n", [IMPacket]),
-            case Code of
-                200 ->
-                    {ok, Imids};
-                210 ->
-                    {ok, Imids}
-                    %%query_online(Imids)
-            end
-    end.
-
-%% FIXME
-query_online(Acc) ->
-    hi_client:sendpkt_async(protocol_helper:'contact#queryonline'(lists:last(Acc))),
     receive
         {impacket, {_, [{method, "queryonline"}, {code, Code}|_], Xml}=IMPacket} ->
             [{result, [{list, ImidStr}], []}] = xmerl_impacket:xml_to_tuple(Xml),
@@ -87,13 +72,46 @@ query_online(Acc) ->
             io:format("~p~n", [IMPacket]),
             case Code of
                 200 ->
-                    {ok, Acc + Imids};
+                    {ok, Imids};
                 210 ->
-                    {to_be, Acc + Imids}
+                    %%{ok, Imids}
+                    query_online(Imids)
+            end
+    end.
+%% FIXME
+query_online(Acc) ->
+    hi_client:sendpkt_async(protocol_helper:'contact#queryonline'(lists:max(Acc))),
+    receive
+        {impacket, {_, [{method, "queryonline"}, {code, Code}|_], Xml}=IMPacket} ->
+            [{result, [{list, ImidStr}], []}] = xmerl_impacket:xml_to_tuple(Xml),
+            Imids = lists:map(fun list_to_integer/1,
+                              string:tokens(ImidStr, ",")),
+            io:format("~p~n", [IMPacket]),
+            case Code of
+                200 ->
+                    {ok, Acc ++ Imids};
+                210 ->
+                    {to_be, Acc ++ Imids}
                     %%query_online(Imids ++ Acc)
             end
     end.
 
+debug_online(P) ->
+    hi_client:sendpkt_async(protocol_helper:'contact#queryonline'(P)),
+    receive
+        {impacket, {_, [{method, "queryonline"}, {code, Code}|_], Xml}=IMPacket} ->
+            [{result, [{list, ImidStr}], []}] = xmerl_impacket:xml_to_tuple(Xml),
+            Imids = lists:map(fun list_to_integer/1,
+                              string:tokens(ImidStr, ",")),
+            io:format("~p~n", [IMPacket]),
+            case Code of
+                200 ->
+                    {ok, Imids};
+                210 ->
+                    {210, Imids}
+                        %%query_online(Imids)
+            end
+    end.
 
 %%%===================================================================
 %%% Internal functions

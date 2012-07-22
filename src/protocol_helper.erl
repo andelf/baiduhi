@@ -163,10 +163,10 @@
                             {localeid, "2052"},
                             {imversion, "2,1,0,1"},
                             {pc_code, "BDIMXV2-O_1-C_9-D_3-M_4-V_5"}], []}]})}.
-	%% ,LocaleSimpleChinese = 2052 /**< 简体中文.*/
-	%% ,LocaleTraditionalChinese= 1028 /**< 繁体中文.*/
-	%% ,LocaleUsEnglish = 1033 /**< 美国英语.*/
-	%% ,LocaleJapanese = 1041 /**< 日文 >*/
+        %% ,LocaleSimpleChinese = 2052 /**< 简体中文.*/
+        %% ,LocaleTraditionalChinese= 1028 /**< 繁体中文.*/
+        %% ,LocaleUsEnglish = 1033 /**< 美国英语.*/
+        %% ,LocaleJapanese = 1041 /**< 日文 >*/
 
 
 %% contact
@@ -188,7 +188,7 @@
 
 %% 从大到小返回
 'contact#queryonline'() ->
-    'contact#queryonline'(0).
+    'contact#queryonline'(1).
 'contact#queryonline'(LastId) ->
     {{contact, "1.0", request, hi_state:seq()},
      [{method, "queryonline"},
