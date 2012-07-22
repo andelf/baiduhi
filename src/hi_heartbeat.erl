@@ -19,7 +19,7 @@
 
 -define(SERVER, ?MODULE).
 
--record(state, {sock, timeout}).
+-record(state, {sock, timeout, errors}).
 
 %%%===================================================================
 %%% API
@@ -63,7 +63,7 @@ set_timeout(Timeout) ->
 init([]) ->
     {ok, #state{}};
 init([Sock, Timeout]) ->
-    {ok, #state{sock=Sock, timeout=Timeout}, Timeout}.
+    {ok, #state{sock=Sock, timeout=Timeout, errors=0}, Timeout}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -114,17 +114,19 @@ handle_cast(_Msg, State) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_info(timeout, #state{sock=Sock, timeout=Timeout} = State) ->
+handle_info(timeout, #state{errors=2} = State) ->
+    {stop, "heartbeat with no ack", State};
+handle_info(timeout, #state{sock=Sock, timeout=Timeout, errors=Errors} = State) ->
     logger:log(debug, "heartbeat!"),
     ok = gen_tcp:send(Sock, protocol:make_packet(heartbeat)),
     receive
         heartbeat ->
             logger:log(debug, "heartbeat ack!"),
-            {noreply, State, Timeout}
+            {noreply, State#state{errors=0}, Timeout}
     after
         Timeout ->
-            logger:log(error, "heartbeat with no ack!"),
-            {noreply, State, 0}
+            logger:log(error, "heartbeat with no ack! ~w times", [Errors]),
+            {noreply, State#state{errors=Errors+1}, 0}
     end;
 
 handle_info(_Info, State) ->

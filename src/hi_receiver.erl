@@ -199,8 +199,23 @@ handle_info({tcp, Sock, Bin}, #state{sock=Sock,
                         true ->
                             <<SrcData:SrcDataLen/binary, _/binary>> = ZipData
                     end,
-                    ClientPid ! {impacket, protocol:decode_impacket(SrcData)},
-                    {noreply, State#state{gathered=Rest1}, Timeout}
+                    case protocol:decode_impacket(SrcData) of
+                        {{_, _, ack, Seq}, _, _} = IMPacket ->
+                            case hi_state:get(Seq) of
+                                undefined ->
+                                    ClientPid ! {impacket, IMPacket},
+                                    {noreply, State#state{gathered=Rest1}, Timeout};
+                                {Pid, _Ref} ->
+                                    io:format("from ~p~n", [Pid]),
+                                    Pid ! {impacket, IMPacket},
+                                    {noreply, State#state{gathered=Rest1}, Timeout}
+                            end;
+                        {_, _, _} = IMPacket ->
+                            ClientPid ! {impacket, IMPacket},
+                            {noreply, State#state{gathered=Rest1}, Timeout};
+                        _Other ->
+                            {stop, "packet decode error!", State}
+                    end
             end
     end;
 handle_info({tcp_closed, _What}, State) ->

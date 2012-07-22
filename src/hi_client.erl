@@ -11,7 +11,7 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/0, start_link/2, stop/0]).
+-export([start_link/0, start_link/2, stop/0, sendpkt_async/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -47,6 +47,8 @@ start_link() ->
 start_link(Username, Password) ->
     gen_server:start_link({local, ?SERVER}, ?MODULE,
                           [{username, Username}, {password, Password}], []).
+sendpkt_async(ImPacket) ->
+    gen_server:call(?SERVER, {sendpkt_async, ImPacket}).
 
 stop() ->
     gen_server:cast(?SERVER, stop).
@@ -85,6 +87,12 @@ init(Config) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
+handle_call({sendpkt_async, {{_,_,request,Seq},_,_} = IMPacket}, From, #state{sock=Sock, aeskey=AESKey} = State) ->
+    hi_state:set(Seq, From),                    % register callback path
+    Data = protocol:encode_impacket(IMPacket),
+    Reply = gen_tcp:send(Sock, protocol:make_packet(normal, Data, AESKey)),
+    {reply, Reply, State};
+
 handle_call(_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
@@ -237,8 +245,10 @@ handle_info({impacket, {{msg, _, notify, _}, [{method,"msg_notify"}|Params], Xml
             self() ! {sendpkt, protocol_helper:'msg#msg_ack'(Type, From, MsgId)};
         false -> ok
     end,
-    io:format("income msg: ~ts~n", [msg_fmt:msg_to_list(Xml)]),
-    case msg_fmt:msg_to_list(Xml) of
+    ReplyTo = if Type =:= 1 -> From; true -> To end,
+    IncomeMessage = msg_fmt:msg_to_list(Xml),
+    hi_event:text_msg(IncomeMessage, From, Type, ReplyTo),
+    case IncomeMessage of
         "!qr " ++ Text ->
             case chart_api:make_chart({qr, Text}) of
                 {ok, png, Image} ->
@@ -354,10 +364,10 @@ handle_info({impacket, {{msg, _, notify, _}, [{method,"msg_notify"}|Params], Xml
 %% message that no need to ack
 handle_info({impacket, {{contact, _, notify, _}, [{method, "notify"}|_Params], Xml}},
             State) ->
-    [{contact, Params, []}] = xmerl_impacket:xml_to_tuple(Xml),
+    [{contact, [{imid, Imid}|Params], []}] = xmerl_impacket:xml_to_tuple(Xml),
     %% {Doc, _} = xmerl_scan:string(Xml),
     %% [#xmlAttribute{value=Who}] = xmerl_xpath:string("//contact/@imid", Doc),
-    logger:log(normal, "contact:notify ~p", [Params]),
+    hi_event:contact_notify(Imid, Params),
     {noreply, State};
 
 handle_info({impacket, {{msg, _, notify, _}, [{method, "msg_ack_notify"}|_], _}}, State) ->

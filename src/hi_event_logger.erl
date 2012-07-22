@@ -74,8 +74,25 @@ init([]) ->
 %%                          remove_handler
 %% @end
 %%--------------------------------------------------------------------
+handle_event(login_ready, State) ->
+    error_logger:info_msg("login ready"),
+    {ok, State};
+handle_event({contact_notify, Imid, Params}, State) ->
+    error_logger:info_msg("contact:notify imid:~s ~180p", [Imid, Params]),
+    {ok, State};
+handle_event({text_msg, Text, From, Type, ReplyTo}, State) ->
+    ConvertType = fun(1) -> "SINGLE";
+                     (2) -> "GROUP";
+                     (3) -> "MCHAT"
+                  end,
+    error_logger:info_msg("~s text msg <from:~p> <replyto:~p>: ~ts~n", [ConvertType(Type), From, ReplyTo, Text]),
+    {ok, State};
+
 handle_event(_Event, State) ->
+    error_logger:info_msg("unhandled log ~p", [_Event]),
     {ok, State}.
+
+
 
 %%--------------------------------------------------------------------
 %% @private
