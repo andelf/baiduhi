@@ -12,7 +12,7 @@
 -export([make_imgdata/1, img_tag/1, msg_to_list/1]).
 %% xmerl callbacks
 -export([msg/4, font/4, text/4, url/4, face/4, cface/4,
-        img/4, reply/4]).
+        img/4, reply/4, thumb/4]).
 -export(['#xml-inheritance#'/0,
          '#root#'/4,
          '#element#'/5,
@@ -117,6 +117,8 @@ reply(Data, Attrs, _Parents, _E) ->
     end,
     [Data, Name].
 
+thumb(Data, _Attrs, _Parents, _E) ->
+    Data.
 
 
 
