@@ -54,15 +54,15 @@ send_mchat_message(To, Message) ->
     %% group message
     send_msg(3, To, Message).
 
-
+%% contacts
 query_contact(Imid) ->
     query_contacts([Imid], [imid, baiduid, status, personal_comment, nickname,
-                            name, email, music, cli_type]).
+                            name, email, music, cli_type, friendly_level]).
 query_contact(Imid, Fields) ->
     query_contacts([Imid], Fields).
 query_contacts(Imids) ->
     query_contacts(Imids, [imid, baiduid, status, personal_comment, nickname,
-                              name, email, music, cli_type]).
+                              name, email, music, cli_type, friendly_level]).
 query_contacts(Imids, Fields) ->
     hi_client:sendpkt_async(protocol_helper:'contact#query'(lists:map(fun util:to_list/1,
                                                                       Fields),
@@ -111,6 +111,68 @@ query_online(Acc) ->
                     %%query_online(Imids ++ Acc)
             end
     end.
+
+%% friends
+get_friends() ->
+    hi_client:sendpkt_async(protocol_helper:'friend#get_friend'()),
+    receive
+        {impacket, {_, [{method, "get_friend"}, {code, Code}|_], Xml}=_IMPacket} ->
+            [{friend_set, [], FriendNodes}] = xmerl_impacket:xml_to_tuple(Xml),
+            FriendAttrs = lists:map(fun({friend, Attr, []}) -> Attr end,
+                                    FriendNodes),
+            case Code of
+                200 ->
+                    {ok, FriendAttrs};
+                Other ->
+                    {to_be, Other, FriendAttrs}
+            end
+    end.
+
+get_teams() ->
+    hi_client:sendpkt_async(protocol_helper:'friend#get_team'()),
+    receive
+        {impacket, {_, [{method, "get_team"}, {code, _Code}|_], Xml}=_IMPacket} ->
+            [{team_set, [], TeamNodes}] = xmerl_impacket:xml_to_tuple(Xml),
+            TeamAttrs = lists:map(fun({team, Attr, []}) -> Attr end,
+                                  TeamNodes),
+            {ok, TeamAttrs}
+    end.
+
+find_friend(Account) ->
+    hi_client:sendpkt_async(protocol_helper:'friend#find'(util:to_list(Account))),
+    receive
+        {impacket, {_, [{method, "find"}, {code, Code}|Params], []}=_IMPacket} ->
+            case Code of
+                200 ->
+                    {imid, Imid} = lists:keyfind(imid, 1, Params),
+                    {ok, Imid};
+                210 ->
+                    {210, Params};
+                401 ->
+                    {imid, Imid} = lists:keyfind(imid, 1, Params),
+                    {not_yet_activated, Imid};
+                402 ->
+                    {error, "account not exists"}
+            end
+    end.
+
+%% 0	B的好友列表没有A
+%% 1	B的好友列表有A,并且已经验证
+%% 2	B的好友列表有A,但是未验证
+query_friend_type(Imid) ->
+    hi_client:sendpkt_async(protocol_helper:'friend#q_type'(Imid)),
+    receive
+        {impacket, {_, [{method, "q_type"}, {code, Code}|Params], []}=IMPacket} ->
+            case Code of
+                200 ->
+                    {t, Type} = lists:keyfind(t, 1, Params),
+                    {ok, Type};
+                _Other ->
+                    {error, Params}
+            end
+    end.
+
+
 
 debug_online(P) ->
     hi_client:sendpkt_async(protocol_helper:'contact#queryonline'(P)),

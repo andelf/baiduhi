@@ -42,7 +42,6 @@
 %% @end
 %%--------------------------------------------------------------------
 start_link() ->
-    logger:log(normal, "self is~p", [self()]),
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
 stop() ->

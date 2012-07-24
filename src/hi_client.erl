@@ -43,6 +43,7 @@
 %% @end
 %%--------------------------------------------------------------------
 start_link() ->
+    %%start_link("video_help", "lovevideo").
     start_link("fledna", "lovelili").
 start_link(Username, Password) ->
     gen_server:start_link({local, ?SERVER}, ?MODULE,
@@ -198,10 +199,9 @@ handle_info({impacket, {{login, _, ack, _}, [{method,"login"},{code,Code}|_], _}
 %% login ready!
 handle_info({impacket, {{user, _, ack, _}, [{method,"login_ready"},{code,200}|_], _}},
             #state{sock=Sock, stage=on_login_ready_response} = State) ->
-    logger:log(normal, "login ready!"),
-    hi_event:login_ready(),
     hi_heartbeat:set_sock(Sock),
     hi_heartbeat:set_timeout(40000),
+    hi_event:login_ready(),
     self() ! {sendpkt, protocol_helper:'group#get_list'()},
     {noreply, State#state{stage=normal}};
 %% ----------------------------------------

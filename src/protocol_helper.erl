@@ -68,6 +68,38 @@
      ""}.
 
 %% friend
+'friend#get_friend'() ->
+    {{friend, "1.0", request, hi_state:seq()},
+     [{method, "get_friend"},
+      {uid, hi_state:uid()},
+      {page, 0},
+      {timestamp, 0}],
+     []}.
+
+'friend#get_team'() ->
+    {{friend, "1.0", request, hi_state:seq()},
+     [{method, "get_team"},
+      {uid, hi_state:uid()}],
+     []}.
+
+'friend#find'(Account) ->
+    {{friend, "1.0", request, hi_state:seq()},
+     [{method, "find"},
+      {uid, hi_state:uid()},
+      {account, Account},
+      {type, case lists:member($@, Account) of
+                 true -> 2;                     % email
+                 _Other -> 1                    % baiduid
+             end}],
+     []}.
+
+'friend#q_type'(Imid) ->
+    {{friend, "1.0", request, hi_state:seq()},
+     [{method, "q_type"},
+      {uid, hi_state:uid()},
+      {q, Imid}],
+     []}.
+
 'friend#add_ack'(Agree, Imid) ->
     'friend#add_ack'(Agree, Imid, "").
 'friend#add_ack'(Agree, Imid, RequestNote) ->
