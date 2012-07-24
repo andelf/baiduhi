@@ -389,18 +389,7 @@ handle_info({impacket, {{cm, _, request, _}, [{method, "scene"}|_], _}}, State) 
 handle_info({impacket, {{msg,_,ack,_}, [{method, Method}|_], _}}, State) ->
     logger:log(normal, "msg:~s ack", [Method]),
     {noreply, State};
-handle_info({impacket, {{group,_,ack,_}, [{method, "get_list"}|_], Xml}},
-            State) ->
-    [{group_set, _, GroupTagList}] = xmerl_impacket:xml_to_tuple(Xml),
-    lists:map(fun({group, [{gid, Gid}, {name, Name}|_], _}) ->
-                      io:format("group: ~ts id:~s~n", [Name, Gid]),
-                      self() ! {sendpkt,
-                                protocol_helper:'group#get'(Gid)}
-              end, GroupTagList),
-    {noreply, State};
-handle_info({impacket, {{group,_,ack,_}, [{method, "get"}|_], Xml}}, State) ->
-    logger:log(normal, "group:get ~s", [Xml]),
-    {noreply, State};
+
 %% heartbeat move to hi_heartbeat
 %% handle_info(heartbeat, State) ->
 %%     logger:log(debug, "heartbeat ack!"),

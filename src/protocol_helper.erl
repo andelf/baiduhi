@@ -249,7 +249,7 @@
      [{method, "get_member"},
       {uid, hi_state:uid()},
       {gid, Gid},
-      {timestamp, util:timestamp()},
+      {timestamp, 0},
       {pagesize, 1000},
       {page, 0}],
      ""}.

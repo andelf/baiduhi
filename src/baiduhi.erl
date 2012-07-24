@@ -162,13 +162,55 @@ find_friend(Account) ->
 query_friend_type(Imid) ->
     hi_client:sendpkt_async(protocol_helper:'friend#q_type'(Imid)),
     receive
-        {impacket, {_, [{method, "q_type"}, {code, Code}|Params], []}=IMPacket} ->
+        {impacket, {_, [{method, "q_type"}, {code, Code}|Params], []}=_IMPacket} ->
             case Code of
                 200 ->
                     {t, Type} = lists:keyfind(t, 1, Params),
                     {ok, Type};
                 _Other ->
                     {error, Params}
+            end
+    end.
+
+%% groups
+get_groups() ->
+    hi_client:sendpkt_async(protocol_helper:'group#get_list'()),
+    receive
+        {impacket, {_, [{method, "get_list"}, {code, _Code}|_], Xml}=_IMPacket} ->
+            [{group_set, [], GroupNodes}] = xmerl_impacket:xml_to_tuple(Xml),
+            GroupAttrs = lists:map(fun({group, Attr, []}) -> Attr end,
+                                   GroupNodes),
+            {ok, GroupAttrs}
+    end.
+
+get_group(Gid) ->
+    hi_client:sendpkt_async(protocol_helper:'group#get'(Gid)),
+    receive
+        {impacket, {_, [{method, "get"}, {code, Code}|_], Xml}=_IMPacket} ->
+            case Code of
+                200 ->
+                    [{group, Attrs, [ManagerSetNode]}] = xmerl_impacket:xml_to_tuple(Xml),
+                    {manager_set, [], ManagerNodes} = ManagerSetNode,
+                    Managers = lists:map(fun({manager,[{imid,Imid}],[]}) -> Imid end,
+                                         ManagerNodes),
+                    {ok, Attrs, Managers};
+                Other ->
+                    {error, Other}
+            end
+    end.
+
+get_group_members(Gid) ->
+    hi_client:sendpkt_async(protocol_helper:'group#get_member'(Gid)),
+    receive
+        {impacket, {_, [{method, "get_member"}, {code, Code}|_], Xml}=_IMPacket} ->
+            case Code of
+                200 ->
+                    [{member_set, [], MemberNodes}] = xmerl_impacket:xml_to_tuple(Xml),
+                    Members = lists:map(fun({member, [{imid,Imid}],[]}) -> Imid end,
+                                        MemberNodes),
+                    {ok, Members};
+                Other ->
+                    {error, Other}
             end
     end.
 
