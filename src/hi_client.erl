@@ -43,7 +43,8 @@
 %% @end
 %%--------------------------------------------------------------------
 start_link() ->
-    start_link("video_help", "lovevideo").
+    start_link("image_help", "loveimage").
+    %%start_link("video_help", "lovevideo").
     %%start_link("fledna", "lovelili").
 start_link(Username, Password) ->
     gen_server:start_link({local, ?SERVER}, ?MODULE,
@@ -202,7 +203,6 @@ handle_info({impacket, {{user, _, ack, _}, [{method,"login_ready"},{code,200}|_]
     hi_heartbeat:set_sock(Sock),
     hi_heartbeat:set_timeout(40000),
     hi_event:login_ready(),
-    self() ! {sendpkt, protocol_helper:'group#get_list'()},
     {noreply, State#state{stage=normal}};
 %% ----------------------------------------
 %% Handle request
@@ -220,14 +220,7 @@ handle_info({impacket, {{friend, _, notify, _}, [{method,"add_notify"}|_], Xml}}
     [{add_notify, Attrs, _}] = xmerl_impacket:xml_to_tuple(Xml),
     {imid, From} = lists:keyfind(imid, 1, Attrs),
     {request_note, RequestNote} = lists:keyfind(request_note, 1, Attrs),
-    logger:log(normal, "friend request! from:~p note:~s", [From, RequestNote]),
-    case RequestNote of
-        "1396730" ++ _ ->
-            self() ! {sendpkt, protocol_helper:'friend#add_ack'(1, From)},
-            self() ! {sendpkt, protocol_helper:'friend#add'(From)};
-        _ ->
-            self() ! {sendpkt, protocol_helper:'friend#add_ack'(0, From, "密码是调戏群群号!")}
-    end,
+    hi_event:add_friend(From, RequestNote),
     {noreply, State};
 
 handle_info({impacket, {{msg, _, notify, _}, [{method,"msg_notify"}|Params], Xml}},
@@ -343,19 +336,19 @@ handle_info({impacket, {{msg, _, notify, _}, [{method,"msg_notify"}|Params], Xml
             SendTo = if Type =:= 1 -> From; true -> To end,
             self() ! {sendpkt, protocol_helper:'msg#msg_request'(Type, SendTo, ReplyBody)},
             {noreply, State};
-        [$\@ | TextLine] ->
-            Text = tl(lists:dropwhile(fun(C) -> C=/= 32 end, TextLine)),
-            Reply = "test reply, you said: " ++ unicode:characters_to_binary(Text),
-            ReplyBody = make_xml_bin(
-                          {msg, [], [{font, [{n, "Fixedsys"},
-                                             {s, 10}, {b, 0}, {i, 0}, {ul, 0}, {c, 16#EE9640},
-                                             {cs, 134}],
-                                      []},
-                                     {text, [{c, Reply}], []}
-                                    ]}),
-            SendTo = if Type =:= 1 -> From; true -> To end,
-            self() ! {sendpkt, {sendpkt, protocol_helper:'msg#msg_request'(Type, SendTo, ReplyBody)}},
-            {noreply, State};
+        %% [$\@ | TextLine] ->
+        %%     Text = tl(lists:dropwhile(fun(C) -> C=/= 32 end, TextLine)),
+        %%     Reply = "test reply, you said: " ++ unicode:characters_to_binary(Text),
+        %%     ReplyBody = make_xml_bin(
+        %%                   {msg, [], [{font, [{n, "Fixedsys"},
+        %%                                      {s, 10}, {b, 0}, {i, 0}, {ul, 0}, {c, 16#EE9640},
+        %%                                      {cs, 134}],
+        %%                               []},
+        %%                              {text, [{c, Reply}], []}
+        %%                             ]}),
+        %%     SendTo = if Type =:= 1 -> From; true -> To end,
+        %%     self() ! {sendpkt, {sendpkt, protocol_helper:'msg#msg_request'(Type, SendTo, ReplyBody)}},
+        %%     {noreply, State};
         _Other ->
             {noreply, State}
     end;
@@ -373,6 +366,10 @@ handle_info({impacket, {{contact, _, notify, _}, [{method, "notify"}|_Params], X
 handle_info({impacket, {{msg, _, notify, _}, [{method, "msg_ack_notify"}|_], _}}, State) ->
     logger:log(normal, "msg:msg_ack_notify. ignore"),
     {noreply, State};
+
+%% kickout
+handle_info({impacket,{{login,_,notify,_},[{method,"kickout"}|_], _}}, State) ->
+    {stop, normal, State};
 
 %% handle other request
 handle_info({impacket, {{cm, _, request, _}, [{method, "typ"}|Params], _}},

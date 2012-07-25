@@ -64,6 +64,8 @@
     'security#verify'(11, [{uid2, Imid}]);
 'security#verify'(add_friend, Imid) ->
     'security#verify'(2, [{friend, Imid}]);
+'security#verify'(delete_friend, Imid) ->
+    'security#verify'(3, [{friend, Imid}]);
 'security#verify'(Type, AdditonalHeader) ->
     {{security, "1.0", request, hi_state:seq()},
      [{method, "verify"}, {uid, hi_state:uid()}, {type, Type}, {lid, hi_state:get(username)}|AdditonalHeader],
@@ -104,7 +106,7 @@
 
 'friend#add_ack'(Agree, Imid) ->
     'friend#add_ack'(Agree, Imid, "").
-'friend#add_ack'(Agree, Imid, RequestNote) ->
+'friend#add_ack'(Agree, Imid, RejectReason) ->
     {{friend, "1.0", request, hi_state:seq()},
      [{method, "add_ack"},
       {uid, hi_state:uid()}],
@@ -112,21 +114,26 @@
        {add_ack, [{time, util:to_list(util:timestamp())},
                   {agree, util:to_list(Agree)},
                   {imid, util:to_list(Imid)},
-                  {request_note, RequestNote}],
+                  {reject_reason, RejectReason}],
         []})}.
 
-'friend#add'(Imid) ->
-    'friend#add'(Imid, "").
-'friend#add'(Imid, RequestNote) ->
+'friend#add'(VerifyHeaders, Imid, RequestNote) ->
     {{friend, "1.0", request, hi_state:seq()},
      [{method, "add"},
-      {uid, hi_state:uid()}],
+      {uid, hi_state:uid()}|VerifyHeaders],
      util:make_xml_bin(
        {add_friend, [{time, util:to_list(util:timestamp())},
                      {imid, util:to_list(Imid)},
                      {team, "0"},
                      {request_note, util:to_list(RequestNote)}],
         []})}.
+
+'friend#delete'(VerifyHeaders, Imid) ->
+    {{friend, "1.0", request, hi_state:seq()},
+     [{method, "delete"},
+      {uid, hi_state:uid()}|VerifyHeaders],
+     util:make_xml_bin(
+       {delete_friend, [{imid, util:to_list(Imid)}], []})}.
 
 %% user
 %% user:set
@@ -384,6 +391,24 @@
       {uid, hi_state:uid()},
       {mid, Mid}],
      ""}.
+
+'multi#get_list'(Mid) ->
+    {{multi, "1.0", request, hi_state:seq()},
+     [{method, "get_list"},
+      {uid, hi_state:uid()},
+      {mid, Mid}],
+     ""}.
+
+'multi#add'(Mid, ImidList) ->
+    {{multi, "1.0", request, hi_state:seq()},
+     [{method, "add"},
+      {uid, hi_state:uid()},
+      {mid, Mid}],
+     util:make_xml_bin(
+       {member_set, [],
+        lists:map(fun(Imid) ->
+                          {member, [{imid, Imid}], []}
+                  end, ImidList)})}.
 
 %% 申请图片表情服务器的地址（TCP）
 imagesvr() ->

@@ -11,7 +11,7 @@
 %% API
 -export([start_link/0, add_handler/2, delete_handler/2]).
 
--export([login_ready/0, contact_notify/2, text_msg/4]).
+-export([login_ready/0, contact_notify/2, text_msg/4, add_friend/2]).
 -export([xxxx/1]).
 
 -define(SERVER, ?MODULE).
@@ -41,6 +41,9 @@ contact_notify(Imid, What) ->
 
 text_msg(Text, From, Type, ReplyTo) ->
     gen_event:notify(?SERVER, {text_msg, Text, From, Type, ReplyTo}).
+
+add_friend(Imid, RequestNote) ->
+    gen_event:notify(?SERVER, {add_friend, Imid, RequestNote}).
 
 %%%===================================================================
 %%% Internal functions

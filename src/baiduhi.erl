@@ -22,7 +22,8 @@
 %%%===================================================================
 start() ->
     application:start(baiduhi),
-    hi_event:add_handler(hi_event_logger, []).
+    hi_event:add_handler(hi_event_logger, []),
+    hi_event:add_handler(hi_event_handler, []).
 
 stop() ->
     application:stop(baiduhi).
@@ -177,17 +178,49 @@ query_friend_type(Imid) ->
     end.
 
 
-add_friend(Imid) ->
-    add_friend(Imid, "").
-add_friend(Imid, RequestNote) ->
-    hi_client:sendpkt_async(protocol_helper:'friend#add'(Imid, RequestNote)),
+add_friend(VerifyHeaders, Imid) ->
+    add_friend(VerifyHeaders, Imid, "").
+add_friend(VerifyHeaders, Imid, RequestNote) ->
+    hi_client:sendpkt_async(protocol_helper:'friend#add'(VerifyHeaders, Imid, RequestNote)),
     receive
         {impacket, {_, [{method, "add"}, {code, Code}|_Params], []}=_IMPacket} ->
             case Code of
                 200 ->
                     {ok, Imid};
                 410 ->
-                    {error, "verify code error"}
+                    {error, "verify code error"};
+                444 ->
+                    {error, "alreay your friend"}
+            end
+    end.
+
+add_friend_reply(Agree, Imid) ->
+    add_friend_reply(Agree, Imid, "").
+add_friend_reply(Agree, Imid, RejectReason) ->
+    AgreeNo = case Agree of
+                  true -> 1;
+                  false -> 0
+              end,
+    hi_client:sendpkt_async(protocol_helper:'friend#add_ack'(AgreeNo, Imid, RejectReason)),
+    receive
+        {impacket, {_, [{method, "add_ack"}, {code, Code}|_Params], []}=_IMPacket} ->
+            case Code of
+                200 ->
+                    {ok, Imid};
+                Other ->
+                    {error, Other}
+            end
+    end.
+
+delete_friend(VerifyHeaders, Imid) ->
+    hi_client:sendpkt_async(protocol_helper:'friend#delete'(VerifyHeaders, Imid)),
+    receive
+        {impacket, {_, [{method, "delete"}, {code, Code}|_Params], []}=_IMPacket} ->
+            case Code of
+                200 ->
+                    {ok, Imid};
+                Other ->
+                    {error, Other}
             end
     end.
 
@@ -237,18 +270,83 @@ security_verify(What) ->
     hi_client:sendpkt_async(protocol_helper:'security#verify'(What)),
     receive
         {impacket, {_, [{method, "verify"}, {code, _Code}|_], Xml}=_IMPacket} ->
-            [{verify, RequestParams, _}] = xmerl_impacket:xml_to_tuple(Xml),
-            {ok, RequestParams}
+            [{verify, VerifyHeaders, _}] = xmerl_impacket:xml_to_tuple(Xml),
+            {ok, VerifyHeaders}
     end.
 security_verify(What, Imid) ->
     hi_client:sendpkt_async(protocol_helper:'security#verify'(What, Imid)),
     receive
         {impacket, {_, [{method, "verify"}, {code, _Code}|_], Xml}=_IMPacket} ->
-            [{verify, RequestParams, _}] = xmerl_impacket:xml_to_tuple(Xml),
-            {ok, RequestParams}
+            [{verify, VerifyHeaders, _}] = xmerl_impacket:xml_to_tuple(Xml),
+            {ok, VerifyHeaders}
     end.
 
 
+%% multi
+create_mchat(Imids) ->
+    hi_client:sendpkt_async(protocol_helper:'multi#create'(lists:map(fun util:to_list/1,
+                                                                     Imids))),
+    receive
+        {impacket, {_, [{method, "create"}, {code, Code}|Params], Xml}=_IMPacket} ->
+            {mid, Mid} = lists:keyfind(mid, 1, Params),
+            case Code of
+                200 ->
+                    {ok, Mid, []};
+                201 ->
+                    [{fail_list, [], MemberNodes}] = xmerl_impacket:xml_to_tuple(Xml),
+                    FailMembers = lists:map(fun({member, Attrs, []}) -> Attrs end,
+                                            MemberNodes),
+                    {ok, Mid, FailMembers};
+                Other ->
+                    {error, Other, _IMPacket}
+            end
+    end.
+
+quit_mchat(Mid) ->
+    hi_client:sendpkt_async(protocol_helper:'multi#quit'(Mid)),
+    receive
+        {impacket, {_, [{method, "quit"}, {code, Code}|_Params], _}=_IMPacket} ->
+            case Code of
+                200 ->
+                    ok;
+                Other ->
+                    {error, Other}
+            end
+    end.
+
+add_friend_to_mchat(Mid, Imid) ->
+    add_friends_to_mchat(Mid, [Imid]).
+add_friends_to_mchat(Mid, Imids) ->
+    hi_client:sendpkt_async(protocol_helper:'multi#add'(Mid, lists:map(fun util:to_list/1, Imids))),
+    receive
+        {impacket, {_, [{method, "add"}, {code, Code}|_Params], Xml}=_IMPacket} ->
+            case Code of
+                200 ->
+                    {ok, []};
+                201 ->
+                    [{fail_list, [], MemberNodes}] = xmerl_impacket:xml_to_tuple(Xml),
+                    FailMembers = lists:map(fun({member, Attrs, []}) -> Attrs end,
+                                            MemberNodes),
+                    {ok, FailMembers};
+                Other ->
+                    {error, Other}
+            end
+    end.
+
+get_mchat_members(Gid) ->
+    hi_client:sendpkt_async(protocol_helper:'multi#get_list'(Gid)),
+    receive
+        {impacket, {_, [{method, "get_list"}, {code, Code}|_], Xml}=_IMPacket} ->
+            case Code of
+                200 ->
+                    [{member_set, [], MemberNodes}] = xmerl_impacket:xml_to_tuple(Xml),
+                    Members = lists:map(fun({member, [{imid,Imid}],[]}) -> Imid end,
+                                        MemberNodes),
+                    {ok, Members};
+                Other ->
+                    {error, Other}
+            end
+    end.
 
 debug_online(P) ->
     hi_client:sendpkt_async(protocol_helper:'contact#queryonline'(P)),

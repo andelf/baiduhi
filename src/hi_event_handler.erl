@@ -6,7 +6,7 @@
 %%% @end
 %%% Created : 17 Jul 2012 by Feather.et.ELF <fledna@qq.com>
 %%%-------------------------------------------------------------------
--module(hi_event_logger).
+-module(hi_event_handler).
 
 -behaviour(gen_event).
 
@@ -74,26 +74,29 @@ init([]) ->
 %%                          remove_handler
 %% @end
 %%--------------------------------------------------------------------
-handle_event(login_ready, State) ->
-    error_logger:info_msg("login ready"),
-    {ok, State};
 handle_event({contact_notify, Imid, Params}, State) ->
-    error_logger:info_msg("contact:notify imid:~s ~180p", [Imid, Params]),
     {ok, State};
 handle_event({text_msg, Text, From, Type, ReplyTo}, State) ->
-    ConvertType = fun(1) -> "SINGLE";
-                     (2) -> "GROUP";
-                     (3) -> "MCHAT"
-                  end,
-    error_logger:info_msg("~s text msg <from:~p> <replyto:~p>: ~ts~n", [ConvertType(Type), From, ReplyTo, Text]),
+    %% ConvertType = fun(1) -> "SINGLE";
+    %%                  (2) -> "GROUP";
+    %%                  (3) -> "MCHAT"
+    %%               end,
+    %% error_logger:info_msg("~s text msg <from:~p> <replyto:~p>: ~ts~n", [ConvertType(Type), From, ReplyTo, Text]),
     {ok, State};
 handle_event({add_friend, Imid, RequestNote}, State) ->
-    error_logger:info_msg("add friend request <from:~p>: ~p", [Imid, RequestNote]),
+    case RequestNote of
+        "hi" ++ _ ->
+            baiduhi:add_friend_reply(true, Imid),
+            %% self() ! {sendpkt, protocol_helper:'friend#add_ack'(1, From)},
+            {ok, VerifyHeaders} = baiduhi:security_verify(add_friend, Imid),
+            baiduhi:add_friend(VerifyHeaders, Imid, "add back");
+        %% self() ! {sendpkt, protocol_helper:'friend#add'(From, "回加")};
+         _ ->
+            baiduhi:add_friend_reply(false, Imid, "密码不告诉你")
+    end,
     {ok, State};
 
-
 handle_event(_Event, State) ->
-    error_logger:info_msg("unhandled log ~p", [_Event]),
     {ok, State}.
 
 
