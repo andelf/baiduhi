@@ -56,18 +56,23 @@ send_mchat_message(To, Message) ->
 
 %% contacts
 query_contact(Imid) ->
-    query_contacts([Imid], [imid, baiduid, status, personal_comment, nickname,
+    query_contact(Imid, [imid, baiduid, status, personal_comment, nickname,
                             name, email, music, cli_type, friendly_level]).
 query_contact(Imid, Fields) ->
-    query_contacts([Imid], Fields).
+    case query_contacts([Imid], Fields) of
+        {ok, [Contact]} ->
+            {ok, Contact};
+        Other ->
+            Other
+    end.
+
 query_contacts(Imids) ->
     query_contacts(Imids, [imid, baiduid, status, personal_comment, nickname,
                               name, email, music, cli_type, friendly_level]).
 query_contacts(Imids, Fields) ->
-    hi_client:sendpkt_async(protocol_helper:'contact#query'(lists:map(fun util:to_list/1,
-                                                                      Fields),
-                                                            lists:map(fun util:to_list/1,
-                                                                      Imids))),
+    hi_client:sendpkt_async(
+      protocol_helper:'contact#query'(lists:map(fun util:to_list/1, Fields),
+                                      lists:map(fun util:to_list/1, Imids))),
     receive
         {impacket, {{contact, _, ack, _}, [{method, "query"}, {code, Code}|_], Xml}} ->
             io:format("code: ~p~n", [Code]),
@@ -90,7 +95,6 @@ query_online() ->
                 200 ->
                     {ok, Imids};
                 210 ->
-                    %%{ok, Imids}
                     query_online(Imids)
             end
     end.
@@ -107,7 +111,7 @@ query_online(Acc) ->
                 200 ->
                     {ok, Acc ++ Imids};
                 210 ->
-                    {to_be, Acc ++ Imids}
+                    {to_be, Acc ++ Imids}       %FIXME: list too long
                     %%query_online(Imids ++ Acc)
             end
     end.
@@ -172,6 +176,21 @@ query_friend_type(Imid) ->
             end
     end.
 
+
+add_friend(Imid) ->
+    add_friend(Imid, "").
+add_friend(Imid, RequestNote) ->
+    hi_client:sendpkt_async(protocol_helper:'friend#add'(Imid, RequestNote)),
+    receive
+        {impacket, {_, [{method, "add"}, {code, Code}|_Params], []}=_IMPacket} ->
+            case Code of
+                200 ->
+                    {ok, Imid};
+                410 ->
+                    {error, "verify code error"}
+            end
+    end.
+
 %% groups
 get_groups() ->
     hi_client:sendpkt_async(protocol_helper:'group#get_list'()),
@@ -212,6 +231,21 @@ get_group_members(Gid) ->
                 Other ->
                     {error, Other}
             end
+    end.
+
+security_verify(What) ->
+    hi_client:sendpkt_async(protocol_helper:'security#verify'(What)),
+    receive
+        {impacket, {_, [{method, "verify"}, {code, _Code}|_], Xml}=_IMPacket} ->
+            [{verify, RequestParams, _}] = xmerl_impacket:xml_to_tuple(Xml),
+            {ok, RequestParams}
+    end.
+security_verify(What, Imid) ->
+    hi_client:sendpkt_async(protocol_helper:'security#verify'(What, Imid)),
+    receive
+        {impacket, {_, [{method, "verify"}, {code, _Code}|_], Xml}=_IMPacket} ->
+            [{verify, RequestParams, _}] = xmerl_impacket:xml_to_tuple(Xml),
+            {ok, RequestParams}
     end.
 
 

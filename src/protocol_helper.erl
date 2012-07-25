@@ -18,11 +18,13 @@
 
 
 'login#login'({V_Url, V_Time, V_Period, V_Code}, DynamicPassword) ->
-    Params = [{method, "login"},
-              {v_url, V_Url},
-              {v_time, V_Time},
-              {v_period, V_Period},
-              {v_code, V_Code}],
+    AddtionHeaders = [{v_url, V_Url},
+                      {v_time, V_Time},
+                      {v_period, V_Period},
+                      {v_code, V_Code}],
+    'login#login'(AddtionHeaders, DynamicPassword);
+'login#login'(AddtionHeaders, DynamicPassword) ->
+    Params = [{method, "login"}|AddtionHeaders],
     Timestamp = util:to_list(util:timestamp()),
     Body = util:make_xml_bin(
              {login, [], [{user, [{account, hi_state:get(username)},
@@ -114,13 +116,16 @@
         []})}.
 
 'friend#add'(Imid) ->
+    'friend#add'(Imid, "").
+'friend#add'(Imid, RequestNote) ->
     {{friend, "1.0", request, hi_state:seq()},
      [{method, "add"},
       {uid, hi_state:uid()}],
      util:make_xml_bin(
        {add_friend, [{time, util:to_list(util:timestamp())},
                      {imid, util:to_list(Imid)},
-                     {team, "0"}],
+                     {team, "0"},
+                     {request_note, util:to_list(RequestNote)}],
         []})}.
 
 %% user
