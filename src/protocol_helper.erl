@@ -352,7 +352,6 @@
     {{cm, "1.0", request, hi_state:seq()},
      [{method, "blk"}, {type, 1},
       {from, hi_state:uid()}, {uid, hi_state:uid()},
-      %% {sys_sess, SysSession},
       {to, To}],
      ""}.
 
@@ -363,7 +362,17 @@
       {uid, hi_state:uid()},
       {type, Type},
       {to, To},
-      %% {sys_sess, x}
+      {sub_id,0},
+      {from, hi_state:uid()}],
+     []}.
+
+'cm#ntyp'(To) ->
+    Type = 1,                                   % only type=1
+    {{cm, "1.0", request, hi_state:seq()},
+     [{method,"ntyp"},
+      {uid, hi_state:uid()},
+      {type, Type},
+      {to, To},
       {sub_id,0},
       {from, hi_state:uid()}],
      []}.

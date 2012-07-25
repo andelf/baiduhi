@@ -348,6 +348,22 @@ get_mchat_members(Gid) ->
             end
     end.
 
+
+%% cm
+blink(Imid) ->
+    hi_client:sendpkt_async(protocol_helper:'cm#blk'(Imid)),
+    receive
+        {impacket, {_, [{method, "blk"}, {code, _Code}|_], _}=_IMPacket} ->
+            {ok, Imid}
+    end.
+
+typing(Imid) ->
+    hi_client:sendpkt_async(protocol_helper:'cm#typ'(Imid)),
+    receive
+        {impacket, {_, [{method, "typ"}, {code, _Code}|_], _}=_IMPacket} ->
+            {ok, Imid}
+    end.
+
 debug_online(P) ->
     hi_client:sendpkt_async(protocol_helper:'contact#queryonline'(P)),
     receive

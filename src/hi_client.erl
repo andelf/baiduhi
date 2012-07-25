@@ -212,7 +212,7 @@ handle_info({impacket, {{cm, _, request, _}, [{method,"blk"}|Params], _}},
             State) ->
     {uid, From} = lists:keyfind(uid, 1, Params),
     logger:log(normal, "cm:blk from imid:~w", [From]),
-    %% {sys_sess, SysSession} = lists:keyfind(sys_sess, 1, Params),
+    hi_event:blink(From),
     self() ! {sendpkt, protocol_helper:'cm#blk'(From)},
     {noreply, State};
 handle_info({impacket, {{friend, _, notify, _}, [{method,"add_notify"}|_], Xml}},
@@ -375,6 +375,7 @@ handle_info({impacket,{{login,_,notify,_},[{method,"kickout"}|_], _}}, State) ->
 handle_info({impacket, {{cm, _, request, _}, [{method, "typ"}|Params], _}},
             State) ->
     {from, From} = lists:keyfind(from, 1, Params),
+    hi_event:typing(From),
     logger:log(normal, "cm:typ imid:~w", [From]),
     self() ! {sendpkt, protocol_helper:'cm#typ'(From)},
     {noreply, State};
