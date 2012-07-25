@@ -91,6 +91,14 @@ handle_event({add_friend, Imid, RequestNote}, State) ->
     error_logger:info_msg("add friend request <from:~p>: ~p", [Imid, RequestNote]),
     {ok, State};
 
+handle_event({blink, Imid}, State) ->
+    error_logger:info_msg("blink notify <from:~p>", [Imid]),
+    {ok, State};
+
+handle_event({typing, Imid}, State) ->
+    error_logger:info_msg("typing notify <from:~p>", [Imid]),
+    {ok, State};
+
 
 handle_event(_Event, State) ->
     error_logger:info_msg("unhandled log ~p", [_Event]),

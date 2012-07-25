@@ -211,7 +211,6 @@ handle_info({impacket, {{user, _, ack, _}, [{method,"login_ready"},{code,200}|_]
 handle_info({impacket, {{cm, _, request, _}, [{method,"blk"}|Params], _}},
             State) ->
     {uid, From} = lists:keyfind(uid, 1, Params),
-    logger:log(normal, "cm:blk from imid:~w", [From]),
     hi_event:blink(From),
     self() ! {sendpkt, protocol_helper:'cm#blk'(From)},
     {noreply, State};
@@ -376,7 +375,6 @@ handle_info({impacket, {{cm, _, request, _}, [{method, "typ"}|Params], _}},
             State) ->
     {from, From} = lists:keyfind(from, 1, Params),
     hi_event:typing(From),
-    logger:log(normal, "cm:typ imid:~w", [From]),
     self() ! {sendpkt, protocol_helper:'cm#typ'(From)},
     {noreply, State};
 handle_info({impacket, {{cm, _, request, _}, [{method, "scene"}|_], _}}, State) ->
