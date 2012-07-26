@@ -225,32 +225,10 @@ handle_info({impacket, {{msg, _, notify, _}, [{method,"msg_notify"}|Params], Xml
     ReplyTo = if Type =:= 1 -> From; true -> To end,
     IncomeTextMessage = msg_fmt:msg_to_list(Xml),
     [IncomeMessage] = xmerl_impacket:xml_to_tuple(Xml),
+    %% events
     hi_event:text_msg(IncomeTextMessage, From, Type, ReplyTo),
     hi_event:full_msg(IncomeMessage, From, Type, ReplyTo),
     case IncomeTextMessage of
-        "!qr " ++ Text ->
-            case chart_api:make_chart({qr, Text}) of
-                {ok, png, Image} ->
-                    ReplyBody = make_xml_bin(
-                                  {msg, [], [{font, [{n, "Fixedsys"},
-                                                     {s, 10}, {b, 0}, {i, 0}, {ul, 0}, {c, 16#EE9640},
-                                                     {cs, 134}],
-                                              []},
-                                             {text, [{c, "\n"}], []},
-                                             msg_fmt:img_tag({imgdata, "png", Image})
-                                            ]});
-                {error, Error} ->
-                    ReplyBody = make_xml_bin(
-                                  {msg, [], [{font, [{n, "Fixedsys"},
-                                                     {s, 10}, {b, 0}, {i, 0}, {ul, 0}, {c, 16#0000CC},
-                                                     {cs, 134}],
-                                              []},
-                                             {text, [{c, io_lib:format("error: ~s", [Error])}], []}
-                                            ]})
-            end,
-            SendTo = if Type =:= 1 -> From; true -> To end,
-            self() ! {sendpkt, protocol_helper:'msg#msg_request'(Type, SendTo, ReplyBody)},
-            {noreply, State};
         "!quit mul" ++ _ ->
             if
                 Type =:= 3 ->                   % if multi msg
@@ -259,11 +237,6 @@ handle_info({impacket, {{msg, _, notify, _}, [{method,"msg_notify"}|Params], Xml
                 true ->
                     {noreply, State}
             end;
-        "!debug" ++ _ ->
-            self() ! {sendpkt, protocol_helper:'user#set'([{has_camera, "1"}])},
-            self() ! {sendpkt, protocol_helper:'contact#query'(["imid", "baiduid", "cli_type", "cli_ver"],
-                                                               ["572761548", "406526983"])},
-            {noreply, State};
         "!status " ++ What ->
             %% 1 在线, 无消息
             %% 2 忙碌
@@ -310,18 +283,6 @@ handle_info({impacket, {{msg, _, notify, _}, [{method,"msg_notify"}|Params], Xml
                     ok
             end,
             {noreply, State};
-        "!reboot " ++ Text ->
-            Reply = "reboot " ++ binary_to_list(unicode:characters_to_binary(Text)) ++ " ...... ok!",
-            ReplyBody = make_xml_bin(
-                          {msg, [], [{font, [{n, "Fixedsys"},
-                                             {s, 10}, {b, 0}, {i, 0}, {ul, 0}, {c, 16#0000CC},
-                                             {cs, 134}],
-                                      []},
-                                     {text, [{c, Reply}], []}
-                                    ]}),
-            SendTo = if Type =:= 1 -> From; true -> To end,
-            self() ! {sendpkt, protocol_helper:'msg#msg_request'(Type, SendTo, ReplyBody)},
-            {noreply, State};
         %% [$\@ | TextLine] ->
         %%     Text = tl(lists:dropwhile(fun(C) -> C=/= 32 end, TextLine)),
         %%     Reply = "test reply, you said: " ++ unicode:characters_to_binary(Text),
@@ -344,8 +305,6 @@ handle_info({impacket, {{msg, _, notify, _}, [{method,"msg_notify"}|Params], Xml
 handle_info({impacket, {{contact, _, notify, _}, [{method, "notify"}|_Params], Xml}},
             State) ->
     [{contact, [{imid, Imid}|Params], []}] = xmerl_impacket:xml_to_tuple(Xml),
-    %% {Doc, _} = xmerl_scan:string(Xml),
-    %% [#xmlAttribute{value=Who}] = xmerl_xpath:string("//contact/@imid", Doc),
     hi_event:contact_notify(Imid, Params),
     {noreply, State};
 
@@ -448,7 +407,3 @@ lookup_root_pub_key(KeyNo) ->
 %% lookup_root_prv_key(KeyNo) ->
 %%     PrvPkcs1 = lists:nth(1+KeyNo, ?RootPrvKeyPKCS_1),
 %%     util:pkcs1_to_rsa_prvkey(PrvPkcs1).
-
-make_xml_bin(Data) ->
-    Doc = xmerl:export_simple_content([Data], xmerl_xml),
-    binary:list_to_bin(Doc).

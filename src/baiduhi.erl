@@ -397,3 +397,10 @@ send_msg(Type, To, Message) ->
         {impacket, IMPacket} ->
             {ok, IMPacket}
     end.
+
+send_raw_message(Type, To, MessageBody) ->
+    hi_client:sendpkt_async(protocol_helper:'msg#msg_request'(Type, To, MessageBody)),
+    receive
+        {impacket, IMPacket} ->
+            {ok, IMPacket}
+    end.
