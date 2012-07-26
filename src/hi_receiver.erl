@@ -205,7 +205,6 @@ handle_info({tcp, Sock, Bin}, #state{sock=Sock,
                                     ClientPid ! {impacket, IMPacket},
                                     {noreply, State#state{gathered=Rest1}, Timeout};
                                 {Pid, _Ref} ->
-                                    io:format("from ~p~n", [Pid]),
                                     Pid ! {impacket, IMPacket},
                                     {noreply, State#state{gathered=Rest1}, Timeout}
                             end;

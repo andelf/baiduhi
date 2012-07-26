@@ -208,23 +208,9 @@ handle_info({impacket, {{user, _, ack, _}, [{method,"login_ready"},{code,200}|_]
 %% Handle request
 %% ----------------------------------------
 %%
-handle_info({impacket, {{cm, _, request, _}, [{method,"blk"}|Params], _}},
-            State) ->
-    {uid, From} = lists:keyfind(uid, 1, Params),
-    hi_event:blink(From),
-    self() ! {sendpkt, protocol_helper:'cm#blk'(From)},
-    {noreply, State};
-handle_info({impacket, {{friend, _, notify, _}, [{method,"add_notify"}|_], Xml}},
-            State) ->
-    [{add_notify, Attrs, _}] = xmerl_impacket:xml_to_tuple(Xml),
-    {imid, From} = lists:keyfind(imid, 1, Attrs),
-    {request_note, RequestNote} = lists:keyfind(request_note, 1, Attrs),
-    hi_event:add_friend(From, RequestNote),
-    {noreply, State};
-
 handle_info({impacket, {{msg, _, notify, _}, [{method,"msg_notify"}|Params], Xml}},
             State) ->
-    logger:log(normal, "msg:msg_notify ~p ~n~s", [Params, Xml]),
+    %% logger:log(normal, "msg:msg_notify ~p ~n~s", [Params, Xml]),
     {from, From} = lists:keyfind(from, 1, Params),
     {type, Type} = lists:keyfind(type, 1, Params), %type=2 group, type=3 multi
     {to, To} = lists:keyfind(to, 1, Params),     %联系人ID|群ID|临时群ID
@@ -238,9 +224,11 @@ handle_info({impacket, {{msg, _, notify, _}, [{method,"msg_notify"}|Params], Xml
         false -> ok
     end,
     ReplyTo = if Type =:= 1 -> From; true -> To end,
-    IncomeMessage = msg_fmt:msg_to_list(Xml),
-    hi_event:text_msg(IncomeMessage, From, Type, ReplyTo),
-    case IncomeMessage of
+    IncomeTextMessage = msg_fmt:msg_to_list(Xml),
+    [IncomeMessage] = xmerl_impacket:xml_to_tuple(Xml),
+    hi_event:text_msg(IncomeTextMessage, From, Type, ReplyTo),
+    hi_event:full_msg(IncomeMessage, From, Type, ReplyTo),
+    case IncomeTextMessage of
         "!qr " ++ Text ->
             case chart_api:make_chart({qr, Text}) of
                 {ok, png, Image} ->
@@ -366,16 +354,28 @@ handle_info({impacket, {{msg, _, notify, _}, [{method, "msg_ack_notify"}|_], _}}
     logger:log(normal, "msg:msg_ack_notify. ignore"),
     {noreply, State};
 
+handle_info({impacket, {{friend, _, notify, _}, [{method,"add_notify"}|_], Xml}},
+            State) ->
+    [{add_notify, Attrs, _}] = xmerl_impacket:xml_to_tuple(Xml),
+    {imid, From} = lists:keyfind(imid, 1, Attrs),
+    {request_note, RequestNote} = lists:keyfind(request_note, 1, Attrs),
+    hi_event:add_friend(From, RequestNote),
+    {noreply, State};
+
 %% kickout
 handle_info({impacket,{{login,_,notify,_},[{method,"kickout"}|_], _}}, State) ->
     {stop, normal, State};
 
 %% handle other request
+handle_info({impacket, {{cm, _, request, _}, [{method,"blk"}|Params], _}},
+            State) ->
+    {uid, From} = lists:keyfind(uid, 1, Params),
+    hi_event:blink(From),
+    {noreply, State};
 handle_info({impacket, {{cm, _, request, _}, [{method, "typ"}|Params], _}},
             State) ->
     {from, From} = lists:keyfind(from, 1, Params),
     hi_event:typing(From),
-    self() ! {sendpkt, protocol_helper:'cm#typ'(From)},
     {noreply, State};
 handle_info({impacket, {{cm, _, request, _}, [{method, "scene"}|_], _}}, State) ->
     logger:log(normal, "cm:scene request"),

@@ -74,14 +74,10 @@ init([]) ->
 %%                          remove_handler
 %% @end
 %%--------------------------------------------------------------------
-handle_event({contact_notify, Imid, Params}, State) ->
-    {ok, State};
 handle_event({text_msg, Text, From, Type, ReplyTo}, State) ->
     %% ConvertType = fun(1) -> "SINGLE";
     %%                  (2) -> "GROUP";
     %%                  (3) -> "MCHAT"
-    %%               end,
-    %% error_logger:info_msg("~s text msg <from:~p> <replyto:~p>: ~ts~n", [ConvertType(Type), From, ReplyTo, Text]),
     {ok, State};
 handle_event({add_friend, Imid, RequestNote}, State) ->
     case RequestNote of
@@ -94,6 +90,12 @@ handle_event({add_friend, Imid, RequestNote}, State) ->
          _ ->
             baiduhi:add_friend_reply(false, Imid, "密码不告诉你")
     end,
+    {ok, State};
+handle_event({blink, Imid}, State) ->
+    baiduhi:blink(Imid),
+    {ok, State};
+handle_event({typing, Imid}, State) ->
+    baiduhi:typing(Imid),
     {ok, State};
 
 handle_event(_Event, State) ->

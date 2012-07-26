@@ -80,6 +80,13 @@ handle_event(login_ready, State) ->
 handle_event({contact_notify, Imid, Params}, State) ->
     error_logger:info_msg("contact:notify imid:~s ~180p", [Imid, Params]),
     {ok, State};
+handle_event({full_msg, Message, From, Type, ReplyTo}, State) ->
+    ConvertType = fun(1) -> "SINGLE";
+                     (2) -> "GROUP";
+                     (3) -> "MCHAT"
+                  end,
+    error_logger:info_msg("~s full msg <from:~p> <replyto:~p>:~n~100p~n", [ConvertType(Type), From, ReplyTo, Message]),
+    {ok, State};
 handle_event({text_msg, Text, From, Type, ReplyTo}, State) ->
     ConvertType = fun(1) -> "SINGLE";
                      (2) -> "GROUP";
@@ -98,7 +105,6 @@ handle_event({blink, Imid}, State) ->
 handle_event({typing, Imid}, State) ->
     error_logger:info_msg("typing notify <from:~p>", [Imid]),
     {ok, State};
-
 
 handle_event(_Event, State) ->
     error_logger:info_msg("unhandled log ~p", [_Event]),

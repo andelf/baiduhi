@@ -11,7 +11,7 @@
 %% API
 -export([start_link/0, add_handler/2, delete_handler/2]).
 
--export([login_ready/0, contact_notify/2, text_msg/4, add_friend/2,
+-export([login_ready/0, contact_notify/2, text_msg/4, full_msg/4, add_friend/2,
         blink/1, typing/1]).
 -export([xxxx/1]).
 
@@ -39,6 +39,9 @@ login_ready() ->
 
 contact_notify(Imid, What) ->
     gen_event:notify(?SERVER, {contact_notify, Imid, What}).
+
+full_msg(Message, From, Type, ReplyTo) ->
+    gen_event:notify(?SERVER, {full_msg, Message, From, Type, ReplyTo}).
 
 text_msg(Text, From, Type, ReplyTo) ->
     gen_event:notify(?SERVER, {text_msg, Text, From, Type, ReplyTo}).
