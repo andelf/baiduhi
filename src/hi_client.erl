@@ -129,10 +129,9 @@ handle_cast(_Msg, State) ->
 handle_info(timeout, #state{sock=Sock, config=Config, stage=initial} = State) ->
     logger:log(debug, "handle_info() got timeout"),
     {username, Username} = lists:keyfind(username, 1, Config),
-    %% {ok, Pid} = hi_receiver:start_link(),
-    ok = gen_tcp:controlling_process(Sock, hi_receiver:get_pid()),
-    hi_receiver:set_client(self()),
-    hi_receiver:set_sock(Sock),
+    ok = gen_tcp:controlling_process(Sock, hi_dispatcher:get_pid()),
+    hi_dispatcher:set_client(self()),
+    hi_dispatcher:set_sock(Sock),
     hi_state:set(username, Username),           %set first
     ok = inet:setopts(Sock, [{active, true}]),
     S1Data = protocol:make_stage_data(stage1),
@@ -155,7 +154,7 @@ handle_info({stage4, {Seed, _KeepAliveSpace, S4Data}},
             #state{config=Config, stage=stage3} = State) ->
     S3PrvKey = util:pkcs1_to_rsa_prvkey(?HiPrvKey),
     AESKey = util:rsa_private_decrypt(S4Data, S3PrvKey),
-    hi_receiver:set_aeskey(AESKey),
+    hi_dispatcher:set_aeskey(AESKey),
     logger:log(normal, "aes key: ~w", [AESKey]),
     self() ! {sendpkt, protocol_helper:'security#verify'(login)},
     {noreply, State#state{stage=on_security_response,
@@ -420,8 +419,8 @@ handle_info(_Info, State) ->
 %% @end
 %%--------------------------------------------------------------------
 terminate(_Reason, #state{sock=Sock} = _State) ->
-    hi_receiver:stop(),
-    hi_heartbeat:stop(),
+    %% hi_receiver:stop(),
+    %% hi_heartbeat:stop(),
     gen_tcp:close(Sock),
     ok;
 terminate(_Reason, _State) ->

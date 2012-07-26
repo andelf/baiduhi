@@ -6,14 +6,13 @@
 %%% @end
 %%% Created :  4 Jul 2012 by Feather.et.ELF <fledna@qq.com>
 %%%-------------------------------------------------------------------
--module(hi_receiver).
+-module(hi_dispatcher).
 
 -behaviour(gen_server).
 
 %% API
 -export([start_link/0, stop/0, set_aeskey/1,
          set_sock/1, set_client/1, set_client/0, get_pid/0]).
-
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
@@ -78,7 +77,7 @@ get_pid() ->
 %% @end
 %%--------------------------------------------------------------------
 init([]) ->
-    logger:log(normal, "hi_receiver init()!"),
+    logger:log(normal, "hi_dispatcher init()!"),
     {ok, #state{timeout=?TIMEOUT}}.
 
 %%--------------------------------------------------------------------
@@ -219,7 +218,7 @@ handle_info({tcp, Sock, Bin}, #state{sock=Sock,
 handle_info({tcp_closed, _What}, State) ->
     {stop, normal, State};
 handle_info(_Info, State) ->
-    io:format("hi_receiver ~w~n", [_Info]),
+    io:format("hi_dispatcher ~w~n", [_Info]),
     {noreply, State}.
 
 %%--------------------------------------------------------------------
