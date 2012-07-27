@@ -74,7 +74,42 @@ init([]) ->
 %%                          remove_handler
 %% @end
 %%--------------------------------------------------------------------
-handle_event({text_msg, _Text, _From, _Type, _ReplyTo}, State) ->
+handle_event({text_msg, TextMessage, _From, Type, ReplyTo}, State) ->
+    case TextMessage of
+        "!qr " ++ Text ->
+            case chart_api:make_chart({qr, Text}) of
+                {ok, png, Image} ->
+                    ReplyBody = util:make_xml_bin(
+                                  {msg, [], [{font, [{n, "Fixedsys"},
+                                                     {s, 10}, {b, 0}, {i, 0}, {ul, 0}, {c, 16#EE9640},
+                                                     {cs, 134}],
+                                              []},
+                                             {text, [{c, "\n"}], []},
+                                             msg_fmt:img_tag({imgdata, "png", Image})
+                                            ]});
+                {error, Error} ->
+                    ReplyBody = util:make_xml_bin(
+                                  {msg, [], [{font, [{n, "Fixedsys"},
+                                                     {s, 10}, {b, 0}, {i, 0}, {ul, 0}, {c, 16#0000CC},
+                                                     {cs, 134}],
+                                              []},
+                                             {text, [{c, io_lib:format("error: ~s", [Error])}], []}
+                                            ]})
+            end,
+            baiduhi:send_raw_message(Type, ReplyTo, ReplyBody);
+        "!debug" ++ _ ->
+            baiduhi:set_info(has_camera, "1");
+        "!reboot " ++ Text ->
+            Reply = "reboot " ++ binary_to_list(unicode:characters_to_binary(Text)) ++ " ...... ok!",
+            ReplyBody = util:make_xml_bin(
+                          {msg, [], [{font, [{n, "Fixedsys"},
+                                             {s, 10}, {b, 0}, {i, 0}, {ul, 0}, {c, 16#0000CC},
+                                             {cs, 134}],
+                                      []},
+                                     {text, [{c, Reply}], []}
+                                    ]}),
+            baiduhi:send_raw_message(Type, ReplyTo, ReplyBody)
+    end,
     %% ConvertType = fun(1) -> "SINGLE";
     %%                  (2) -> "GROUP";
     %%                  (3) -> "MCHAT"
