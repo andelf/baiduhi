@@ -74,7 +74,7 @@ init([]) ->
 %%                          remove_handler
 %% @end
 %%--------------------------------------------------------------------
-handle_event({text_msg, Text, From, Type, ReplyTo}, State) ->
+handle_event({text_msg, _Text, _From, _Type, _ReplyTo}, State) ->
     %% ConvertType = fun(1) -> "SINGLE";
     %%                  (2) -> "GROUP";
     %%                  (3) -> "MCHAT"
