@@ -43,7 +43,8 @@
 %% @end
 %%--------------------------------------------------------------------
 start_link() ->
-    start_link("image_help", "loveimage").
+    %%start_link("image_help", "loveimage").
+    start_link("vsop_help", "love_vsop").
     %%start_link("video_help", "lovevideo").
     %%start_link("fledna", "lovelili").
 start_link(Username, Password) ->
@@ -155,7 +156,7 @@ handle_info({stage4, {Seed, _KeepAliveSpace, S4Data}},
     S3PrvKey = util:pkcs1_to_rsa_prvkey(?HiPrvKey),
     AESKey = util:rsa_private_decrypt(S4Data, S3PrvKey),
     hi_dispatcher:set_aeskey(AESKey),
-    logger:log(normal, "aes key: ~w", [AESKey]),
+    logger:log(normal, "aes key: ~p", [util:to_hex_string(AESKey)]),
     self() ! {sendpkt, protocol_helper:'security#verify'(login)},
     {noreply, State#state{stage=on_security_response,
                           config=[{seed, Seed}|Config],
@@ -177,7 +178,6 @@ handle_info({impacket, {{security, _, ack, _}, _, Xml}},
             io:format("v_code url: http://vcode.im.baidu.com/cgi-bin/genimg?~s~n", [V_Url]),
             V_Code = io:get_chars("plz input code>", 4)
     end,
-    logger:log(normal, "v_url:~p v_code:~p", [V_Url, V_Code]),
     self() ! {sendpkt, protocol_helper:'login#login'({V_Url, V_Time, V_Period, V_Code}, protocol:build_dynamic_password(Password, Seed))},
     {noreply, State#state{stage=on_login_login_response}};
 %% user:login_ready
@@ -209,7 +209,6 @@ handle_info({impacket, {{user, _, ack, _}, [{method,"login_ready"},{code,200}|_]
 %%
 handle_info({impacket, {{msg, _, notify, _}, [{method,"msg_notify"}|Params], Xml}},
             State) ->
-    %% logger:log(normal, "msg:msg_notify ~p ~n~s", [Params, Xml]),
     {from, From} = lists:keyfind(from, 1, Params),
     {type, Type} = lists:keyfind(type, 1, Params), %type=2 group, type=3 multi
     {to, To} = lists:keyfind(to, 1, Params),     %联系人ID|群ID|临时群ID
@@ -217,8 +216,6 @@ handle_info({impacket, {{msg, _, notify, _}, [{method,"msg_notify"}|Params], Xml
     %% ack
     case lists:keyfind(waitack, 1, Params) of
         {waitack, _Timeout} ->
-            logger:log(normal, "msg:~w ack from:~w to:~w type:~w",
-                       [MsgId, From, To, Type]),
             self() ! {sendpkt, protocol_helper:'msg#msg_ack'(Type, From, MsgId)};
         false -> ok
     end,
@@ -283,19 +280,6 @@ handle_info({impacket, {{msg, _, notify, _}, [{method,"msg_notify"}|Params], Xml
                     ok
             end,
             {noreply, State};
-        %% [$\@ | TextLine] ->
-        %%     Text = tl(lists:dropwhile(fun(C) -> C=/= 32 end, TextLine)),
-        %%     Reply = "test reply, you said: " ++ unicode:characters_to_binary(Text),
-        %%     ReplyBody = make_xml_bin(
-        %%                   {msg, [], [{font, [{n, "Fixedsys"},
-        %%                                      {s, 10}, {b, 0}, {i, 0}, {ul, 0}, {c, 16#EE9640},
-        %%                                      {cs, 134}],
-        %%                               []},
-        %%                              {text, [{c, Reply}], []}
-        %%                             ]}),
-        %%     SendTo = if Type =:= 1 -> From; true -> To end,
-        %%     self() ! {sendpkt, {sendpkt, protocol_helper:'msg#msg_request'(Type, SendTo, ReplyBody)}},
-        %%     {noreply, State};
         _Other ->
             {noreply, State}
     end;
@@ -309,7 +293,6 @@ handle_info({impacket, {{contact, _, notify, _}, [{method, "notify"}|_Params], X
     {noreply, State};
 
 handle_info({impacket, {{msg, _, notify, _}, [{method, "msg_ack_notify"}|_], _}}, State) ->
-    logger:log(normal, "msg:msg_ack_notify. ignore"),
     {noreply, State};
 
 handle_info({impacket, {{friend, _, notify, _}, [{method,"add_notify"}|_], Xml}},
@@ -340,14 +323,10 @@ handle_info({impacket, {{cm, _, request, _}, [{method, "scene"}|_], _}}, State) 
     {noreply, State};
 %%--------------------------------------------------------------------
 %% handle ack
-handle_info({impacket, {{msg,_,ack,_}, [{method, Method}|_], _}}, State) ->
-    logger:log(normal, "msg:~s ack", [Method]),
+handle_info({impacket, {{msg,_,ack,_}, [{method, _Method}|_], _}}, State) ->
+    %%logger:log(normal, "msg:~s ack", [Method]),
     {noreply, State};
 
-%% heartbeat move to hi_heartbeat
-%% handle_info(heartbeat, State) ->
-%%     logger:log(debug, "heartbeat ack!"),
-%%     {noreply, State};
 %%--------------------------------------------------------------------
 %% sendpkt
 handle_info({sendpkt, {{_,_,request,_},_,_} = IMPacket}, #state{sock=Sock, aeskey=AESKey} = State) ->

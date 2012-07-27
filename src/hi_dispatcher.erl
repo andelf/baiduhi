@@ -99,7 +99,6 @@ handle_call({set_sock, Sock}, _From, State) ->
     {reply, Reply, State#state{sock=Sock, gathered= <<>>}};
 handle_call({set_client, Pid}, {Pid, _Ref} = _From, State) ->
     Reply = {ok, Pid},
-    logger:log(normal, "set_client, ok"),
     {reply, Reply, State#state{client_process=Pid}};
 handle_call({set_aeskey, AESKey}, _From, State) ->
     Reply = ok,
@@ -138,7 +137,6 @@ handle_cast(_Msg, State) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_info(timeout, #state{sock=Sock} = State) ->
-    %% logger:log(normal, "timeout here"),
     self() ! {tcp, Sock, <<>>},
     {noreply, State};
 
@@ -192,7 +190,6 @@ handle_info({tcp, Sock, Bin}, #state{sock=Sock,
                     <<ZipData:ZipDataLen/binary, _/binary>> = util:aes_decrypt(DestData, AESKey),
                     if
                         Compress =:= 1 ->
-                            %% io:format("ZipData~n~w~n", [ZipData]),
                             <<SrcData:SrcDataLen/binary, _/binary>> = zlib:uncompress(ZipData);
                         true ->
                             <<SrcData:SrcDataLen/binary, _/binary>> = ZipData
@@ -218,7 +215,7 @@ handle_info({tcp, Sock, Bin}, #state{sock=Sock,
 handle_info({tcp_closed, _What}, State) ->
     {stop, normal, State};
 handle_info(_Info, State) ->
-    io:format("hi_dispatcher ~w~n", [_Info]),
+    io:format("hi_dispatcher got unkown message ~w~n", [_Info]),
     {noreply, State}.
 
 %%--------------------------------------------------------------------
