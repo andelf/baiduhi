@@ -108,7 +108,9 @@ handle_event({text_msg, TextMessage, _From, Type, ReplyTo}, State) ->
                                       []},
                                      {text, [{c, Reply}], []}
                                     ]}),
-            baiduhi:send_raw_message(Type, ReplyTo, ReplyBody)
+            baiduhi:send_raw_message(Type, ReplyTo, ReplyBody);
+        _Other ->
+            ok
     end,
     %% ConvertType = fun(1) -> "SINGLE";
     %%                  (2) -> "GROUP";
