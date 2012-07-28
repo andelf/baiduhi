@@ -90,7 +90,7 @@ handle_call({egd, Text}, _From, State) ->
 
     Filename = filename:join([code:priv_dir(percept), "fonts", "6x11_latin1.wingsfont"]),
     Font = egd_font:load(Filename),
-    egd:text(Im, {30, 0}, Font, Text, Black),
+    egd:text(Im, {30, 0}, Font, util:to_list(Text), Black),
     Bin = egd:render(Im, png),
     egd:destroy(Im),
     Reply = {ok, png, Bin},
