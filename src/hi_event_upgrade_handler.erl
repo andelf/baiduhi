@@ -77,7 +77,7 @@ init([]) ->
 handle_event({text_msg, TextMessage, From, Type, ReplyTo}, State) ->
     case TextMessage of
         "!upgrade" ->
-            baiduhi:set_info(personal_comment, "系统更新ing..."),
+            baiduhi:set_info(status, "2;IM Robot System Upgrading ..."),
             case From of
                 406526983 ->
                     MsgCbFun = fun(Msg) -> baiduhi:send_message(Type, ReplyTo, Msg) end,
