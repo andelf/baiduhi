@@ -106,7 +106,7 @@ handle_event({text_msg, TextMessage, _From, Type, ReplyTo}, State) ->
             %% 3 离开
             %% 4 隐身, 无消息
             %% 5 离线, 但是能收到消息
-            baiduhi:set_info(personal_comment, binary_to_list(unicode:characters_to_binary(What))),
+            baiduhi:set_info(personal_comment, What),
             {ok, State};
         "!echo " ++ What ->
             baiduhi:send_message(Type, ReplyTo, io_lib:format("~ts", [What])),
@@ -115,7 +115,7 @@ handle_event({text_msg, TextMessage, _From, Type, ReplyTo}, State) ->
             baiduhi:set_info(status, util:to_list("2;" ++ What)),
             {ok, State};
         "!away " ++ What ->
-            baiduhi:set_info(status, "3;" ++ binary_to_list(unicode:characters_to_binary(What))),
+            baiduhi:set_info(status, util:to_list("3;" ++ What)),
             {ok, State};
         "!online" ++ _ ->
             baiduhi:set_info(status, "1;"),

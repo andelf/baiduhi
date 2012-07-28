@@ -83,7 +83,7 @@ handle_event({text_msg, TextMessage, From, Type, ReplyTo}, State) ->
                     MsgCbFun = fun(Msg) -> baiduhi:send_message(Type, ReplyTo, Msg) end,
                     proc_lib:spawn(?MODULE, reload_code, [MsgCbFun]);
                 _Other ->
-                    baiduhi:send_message(Type, ReplyTo, "You are now Administrator!")
+                    baiduhi:send_message(Type, ReplyTo, "You are not Administrator!")
             end;
         _Other ->
             ok
