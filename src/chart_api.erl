@@ -75,13 +75,10 @@ handle_call({qr, Text}, _From, State) ->
         util:escape_uri(Text),
     case httpc:request(Url, ?SERVER) of
         {ok, {{_,200,"OK"}, Headers, Body}} ->
-            logger:log(normal, "header ~p ", [Headers]),
             {reply, {ok, png, Body}, State};
         {ok, {{_,_,Msg}, Headers, _Body}} ->
-            logger:log(normal, "header ~p ", [Headers]),
             {reply, {error, Msg}, State};
         Other ->
-            logger:log(error, "chart_api return ~w", [Other]),
             {reply, {error, "Unkown Error!"}, State}
     end;
 handle_call(_Request, _From, State) ->
