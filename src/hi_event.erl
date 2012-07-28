@@ -12,7 +12,7 @@
 -export([start_link/0, add_handler/2, delete_handler/2]).
 
 -export([login_ready/0, contact_notify/2, text_msg/4, full_msg/4, add_friend/2,
-        blink/1, typing/1]).
+        blink/1, typing/1, code_upgraded/0]).
 -export([xxxx/1]).
 
 -define(SERVER, ?MODULE).
@@ -54,6 +54,9 @@ blink(Imid) ->
 
 typing(Imid) ->
     gen_event:notify(?SERVER, {typing, Imid}).
+
+code_upgraded() ->
+    gen_event:notify(?SERVER, code_upgrade).
 
 %%%===================================================================
 %%% Internal functions

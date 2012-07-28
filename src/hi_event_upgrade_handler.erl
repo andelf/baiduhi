@@ -77,6 +77,7 @@ init([]) ->
 handle_event({text_msg, TextMessage, From, Type, ReplyTo}, State) ->
     case TextMessage of
         "!upgrade" ->
+            baiduhi:set_info(personal_comment, "系统更新ing..."),
             case From of
                 406526983 ->
                     MsgCbFun = fun(Msg) -> baiduhi:send_message(Type, ReplyTo, Msg) end,
@@ -187,4 +188,5 @@ reload_code(MessageCallbackFun) ->
                                       AccIn
                               end, [], RebarOutput),
             MessageCallbackFun(ResultMessage)
-    end.
+    end,
+    hi_event:code_upgraded().
