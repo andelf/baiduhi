@@ -108,6 +108,9 @@ handle_event({text_msg, TextMessage, _From, Type, ReplyTo}, State) ->
             %% 5 离线, 但是能收到消息
             baiduhi:set_info(personal_comment, binary_to_list(unicode:characters_to_binary(What))),
             {ok, State};
+        "!echo " ++ What ->
+            baiduhi:send_message(Type, ReplyTo, io_lib:format("~ts", [What])),
+            {ok, State};
         "!busy " ++ What ->
             baiduhi:set_info(status, util:to_list("2;" ++ What)),
             {ok, State};
