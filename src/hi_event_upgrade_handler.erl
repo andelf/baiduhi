@@ -11,7 +11,7 @@
 -behaviour(gen_event).
 
 %% API
--export([start_link/0, add_handler/0]).
+-export([start_link/0, add_handler/0, reload_code/1]).
 
 %% gen_event callbacks
 -export([init/1, handle_event/2, handle_call/2,
