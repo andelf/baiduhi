@@ -207,6 +207,7 @@ reload_code(MessageCallbackFun) ->
     MessageCallbackFun(GitUpdateMessage),
     RebarOutput = lists:map(
                     fun(Line) ->
+                            io:format("Line: ~s~n", [Line]),
                             case Line of
                                 "Compiled src/" ++ FileName ->
                                     ModName = list_to_atom(lists:sublist(FileName, length(FileName) - 4)),
@@ -216,7 +217,7 @@ reload_code(MessageCallbackFun) ->
                                 Other ->
                                     {ignore, Other}
                             end
-                    end, string:tokens(os:cmd("rebar compile"), "\n")),
+                    end, string:tokens(os:cmd("./rebar compile"), "\n")),
     case lists:keyfind(error, 1, RebarOutput) of
         {error, ErrorMessage} ->
             MessageCallbackFun(ErrorMessage);
@@ -225,6 +226,7 @@ reload_code(MessageCallbackFun) ->
                               fun({mod, Mod}, AccIn) ->
                                       case code:load_file(Mod) of
                                           {module, Mod} ->
+                                              io:format("~sload ~p ok~n", [AccIn, Mod]);
                                               io_lib:format("~sload ~p ok~n", [AccIn, Mod]);
                                           {error, Error} ->
                                               io_lib:format("~sload ~p error: ~p~n", [AccIn, Mod, Error])
