@@ -229,6 +229,7 @@ reload_code(MessageCallbackFun) ->
                                               io:format("~sload ~p ok~n", [AccIn, Mod]),
                                               io_lib:format("~sload ~p ok~n", [AccIn, Mod]);
                                           {error, Error} ->
+                                              io:format("~sload ~p error: ~p~n", [AccIn, Mod, Error]),
                                               io_lib:format("~sload ~p error: ~p~n", [AccIn, Mod, Error])
                                       end;
                                  (_, AccIn) ->
