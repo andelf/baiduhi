@@ -132,7 +132,12 @@ handle_event({text_msg, TextMessage, _From, Type, ReplyTo}, State) ->
             baiduhi:send_raw_message(Type, ReplyTo, ReplyBody),
             {ok, State};
         "!upgrade" ->
-            remove_handler;
+            case From of
+                406526983 ->
+                    remove_handler;
+                _ ->
+                    {ok, State}
+            end;
         _Other ->
             {ok, State}
     end;
