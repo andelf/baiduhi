@@ -56,7 +56,7 @@ typing(Imid) ->
     gen_event:notify(?SERVER, {typing, Imid}).
 
 code_upgraded() ->
-    gen_event:notify(?SERVER, code_upgrade).
+    gen_event:notify(?SERVER, code_upgraded).
 
 %%%===================================================================
 %%% Internal functions
