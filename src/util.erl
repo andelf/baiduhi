@@ -123,7 +123,12 @@ to_list(Atom) when is_atom(Atom) ->
     atom_to_list(Atom);
 to_list(List) when is_list(List) ->
     %% FIXME: handle ordernary list
-    binary_to_list(unicode:characters_to_binary(List));
+    case lists:all(fun(C) -> C < 256 end, List) of
+        true ->
+            List;
+        false ->
+            binary_to_list(unicode:characters_to_binary(List))
+    end;
 to_list(Integer) when is_integer(Integer) ->
     integer_to_list(Integer).
 
