@@ -23,7 +23,7 @@
 start() ->
     application:start(baiduhi),
     hi_event:add_handler(hi_event_logger, []),
-    hi_event:add_handler(hi_event_upgrade_handler, []).
+    hi_event:add_handler(hi_event_upgrade_handler, []),
     hi_event:add_handler(hi_event_handler, []).
 
 stop() ->

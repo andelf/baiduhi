@@ -79,7 +79,8 @@ handle_event({text_msg, TextMessage, From, Type, ReplyTo}, State) ->
         "!upgrade" ->
             case From of
                 406526983 ->
-                    reload_code(fun(Msg) -> baiduhi:send_message(Type, ReplyTo, Msg) end);
+                    MsgCbFun = fun(Msg) -> baiduhi:send_message(Type, ReplyTo, Msg) end,
+                    proc_lib:spawn(?MODULE, fun reload_code/1, [MsgCbFun]);
                 _Other ->
                     baiduhi:send_message(Type, ReplyTo, "You are now Administrator!")
             end;
