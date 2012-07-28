@@ -74,13 +74,27 @@ handle_call({qr, Text}, _From, State) ->
     Url = "http://chart.apis.google.com/chart?cht=qr&chs=200x200&chld=M|1&chl=" ++
         util:escape_uri(Text),
     case httpc:request(Url, ?SERVER) of
-        {ok, {{_,200,"OK"}, Headers, Body}} ->
+        {ok, {{_,200,"OK"}, _Headers, Body}} ->
             {reply, {ok, png, Body}, State};
-        {ok, {{_,_,Msg}, Headers, _Body}} ->
+        {ok, {{_,_,Msg}, _Headers, _Body}} ->
             {reply, {error, Msg}, State};
-        Other ->
+        _Other ->
             {reply, {error, "Unkown Error!"}, State}
     end;
+handle_call({egd, Text}, _From, State) ->
+    Im = egd:create(300,20),
+    Black = egd:color({0,0,0}),
+    Red = egd:color({255,0,0}),
+    egd:filledRectangle(Im, {30,14}, {270,19}, Red),
+    egd:rectangle(Im, {30,14}, {270,19}, Black),
+
+    Filename = filename:join([code:priv_dir(percept), "fonts", "6x11_latin1.wingsfont"]),
+    Font = egd_font:load(Filename),
+    egd:text(Im, {30, 0}, Font, Text, Black),
+    Bin = egd:render(Im, png),
+    egd:destroy(Im),
+    Reply = {ok, png, Bin},
+    {reply, Reply, State};
 handle_call(_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.

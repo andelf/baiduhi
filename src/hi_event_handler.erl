@@ -76,6 +76,22 @@ init([]) ->
 %%--------------------------------------------------------------------
 handle_event({text_msg, TextMessage, From, Type, ReplyTo}, State) ->
     case TextMessage of
+        "!egd " ++ Text ->
+            case chart_api:make_chart({egd, Text}) of
+                {ok, png, Image} ->
+                    ReplyBody = util:make_xml_bin(
+                                  {msg, [], [{font, [{n, "Fixedsys"},
+                                                     {s, 10}, {b, 0}, {i, 0}, {ul, 0}, {c, 16#EE9640},
+                                                     {cs, 134}],
+                                              []},
+                                             {text, [{c, "\n"}], []},
+                                             msg_fmt:img_tag({imgdata, "png", Image})
+                                            ]}),
+                baiduhi:send_raw_message(Type, ReplyTo, ReplyBody);
+                _Other ->
+                    ok
+            end,
+            {ok, State};
         "!qr " ++ Text ->
             case chart_api:make_chart({qr, Text}) of
                 {ok, png, Image} ->
