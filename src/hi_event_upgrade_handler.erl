@@ -2,11 +2,11 @@
 %%% @author Feather.et.ELF <fledna@qq.com>
 %%% @copyright (C) 2012, Feather.et.ELF
 %%% @doc
-%%%
+%%% erlang不能通过code:load_file/1更新本身, 所以把!upgrade消息处理单独拿出来
 %%% @end
 %%% Created : 17 Jul 2012 by Feather.et.ELF <fledna@qq.com>
 %%%-------------------------------------------------------------------
--module(hi_event_handler).
+-module(hi_event_upgrade_handler).
 
 -behaviour(gen_event).
 
@@ -76,60 +76,17 @@ init([]) ->
 %%--------------------------------------------------------------------
 handle_event({text_msg, TextMessage, From, Type, ReplyTo}, State) ->
     case TextMessage of
-        "!qr " ++ Text ->
-            case chart_api:make_chart({qr, Text}) of
-                {ok, png, Image} ->
-                    ReplyBody = util:make_xml_bin(
-                                  {msg, [], [{font, [{n, "Fixedsys"},
-                                                     {s, 10}, {b, 0}, {i, 0}, {ul, 0}, {c, 16#EE9640},
-                                                     {cs, 134}],
-                                              []},
-                                             {text, [{c, "\n"}], []},
-                                             msg_fmt:img_tag({imgdata, "png", Image})
-                                            ]});
-                {error, Error} ->
-                    ReplyBody = util:make_xml_bin(
-                                  {msg, [], [{font, [{n, "Fixedsys"},
-                                                     {s, 10}, {b, 0}, {i, 0}, {ul, 0}, {c, 16#0000CC},
-                                                     {cs, 134}],
-                                              []},
-                                             {text, [{c, io_lib:format("error: ~s", [Error])}], []}
-                                            ]})
-            end,
-            baiduhi:send_raw_message(Type, ReplyTo, ReplyBody);
-        "!debug" ++ _ ->
-            baiduhi:set_info(has_camera, "1");
-        "!reboot " ++ Text ->
-            Reply = "reboot " ++ binary_to_list(unicode:characters_to_binary(Text)) ++ " ...... ok!",
-            ReplyBody = util:make_xml_bin(
-                          {msg, [], [{font, [{n, "Fixedsys"},
-                                             {s, 10}, {b, 0}, {i, 0}, {ul, 0}, {c, 16#0000CC},
-                                             {cs, 134}],
-                                      []},
-                                     {text, [{c, Reply}], []}
-                                    ]}),
-            baiduhi:send_raw_message(Type, ReplyTo, ReplyBody);
+        "!upgrade" ->
+            case From of
+                406526983 ->
+                    reload_code(fun(Msg) -> baiduhi:send_message(Type, ReplyTo, Msg) end);
+                _Other ->
+                    baiduhi:send_message(Type, ReplyTo, "You are now Administrator!")
+            end;
         _Other ->
             ok
     end,
     {ok, State};
-handle_event({add_friend, Imid, RequestNote}, State) ->
-    case RequestNote of
-        "hi" ++ _ ->
-            baiduhi:add_friend_reply(true, Imid),
-            {ok, VerifyHeaders} = baiduhi:security_verify(add_friend, Imid),
-            baiduhi:add_friend(VerifyHeaders, Imid, "add back");
-         _ ->
-            baiduhi:add_friend_reply(false, Imid, "密码不告诉你")
-    end,
-    {ok, State};
-handle_event({blink, Imid}, State) ->
-    baiduhi:blink(Imid),
-    {ok, State};
-handle_event({typing, Imid}, State) ->
-    baiduhi:typing(Imid),
-    {ok, State};
-
 handle_event(_Event, State) ->
     {ok, State}.
 
@@ -195,3 +152,38 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+reload_code(MessageCallbackFun) ->
+    GitUpdateMessage = os:cmd("git pull origin master"),
+    MessageCallbackFun(GitUpdateMessage),
+    RebarOutput = lists:map(
+                    fun(Line) ->
+                            io:format("Line: ~s~n", [Line]),
+                            case Line of
+                                "Compiled src/" ++ FileName ->
+                                    ModName = list_to_atom(lists:sublist(FileName, length(FileName) - 4)),
+                                    {mod, ModName};
+                                "ERROR: " ++ ErrorMessage ->
+                                    {error, ErrorMessage};
+                                Other ->
+                                    {ignore, Other}
+                            end
+                    end, string:tokens(os:cmd("./rebar compile"), "\n")),
+    case lists:keyfind(error, 1, RebarOutput) of
+        {error, ErrorMessage} ->
+            MessageCallbackFun(ErrorMessage);
+        _Other ->
+            ResultMessage = lists:foldl(
+                              fun({mod, Mod}, AccIn) ->
+                                      case code:load_file(Mod) of
+                                          {module, Mod} ->
+                                              io:format("~sload ~p ok~n", [AccIn, Mod]),
+                                              io_lib:format("~sload ~p ok~n", [AccIn, Mod]);
+                                          {error, Error} ->
+                                              io:format("~sload ~p error: ~p~n", [AccIn, Mod, Error]),
+                                              io_lib:format("~sload ~p error: ~p~n", [AccIn, Mod, Error])
+                                      end;
+                                 (_, AccIn) ->
+                                      AccIn
+                              end, [], RebarOutput),
+            MessageCallbackFun(ResultMessage)
+    end.

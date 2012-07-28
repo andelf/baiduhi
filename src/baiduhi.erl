@@ -107,13 +107,11 @@ query_online(Acc) ->
             [{result, [{list, ImidStr}], []}] = xmerl_impacket:xml_to_tuple(Xml),
             Imids = lists:map(fun list_to_integer/1,
                               string:tokens(ImidStr, ",")),
-            io:format("~p~n", [IMPacket]),
             case Code of
                 200 ->
                     {ok, Acc ++ Imids};
                 210 ->
                     {to_be, Acc ++ Imids}       %FIXME: list too long
-                    %%query_online(Imids ++ Acc)
             end
     end.
 
