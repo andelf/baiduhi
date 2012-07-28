@@ -104,7 +104,7 @@ query_online() ->
 query_online(Acc) ->
     hi_client:sendpkt_async(protocol_helper:'contact#queryonline'(lists:max(Acc))),
     receive
-        {impacket, {_, [{method, "queryonline"}, {code, Code}|_], Xml}=IMPacket} ->
+        {impacket, {_, [{method, "queryonline"}, {code, Code}|_], Xml}=_IMPacket} ->
             [{result, [{list, ImidStr}], []}] = xmerl_impacket:xml_to_tuple(Xml),
             Imids = lists:map(fun list_to_integer/1,
                               string:tokens(ImidStr, ",")),
