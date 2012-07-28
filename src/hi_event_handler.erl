@@ -96,9 +96,27 @@ handle_event({text_msg, TextMessage, _From, Type, ReplyTo}, State) ->
                                              {text, [{c, io_lib:format("error: ~s", [Error])}], []}
                                             ]})
             end,
-            baiduhi:send_raw_message(Type, ReplyTo, ReplyBody);
+            baiduhi:send_raw_message(Type, ReplyTo, ReplyBody),
+            {noreply, State};
         "!debug" ++ _ ->
             baiduhi:set_info(has_camera, "1");
+                "!status " ++ What ->
+            %% 1 在线, 无消息
+            %% 2 忙碌
+            %% 3 离开
+            %% 4 隐身, 无消息
+            %% 5 离线, 但是能收到消息
+            baiduhi:set_info(personal_comment, util:to_list(What)),
+            {noreply, State};
+        "!busy " ++ What ->
+            baiduhi:set_info(status, util:to_list("2;" ++ What)),
+            {noreply, State};
+        "!away " ++ What ->
+            baiduhi:set_info(status, util:to_list("3;" ++ What)),
+            {noreply, State};
+        "!online" ++ _ ->
+            baiduhi:set_info(status, util:to_list("1;")),
+            {noreply, State};
         "!reboot " ++ Text ->
             Reply = "reboot " ++ binary_to_list(unicode:characters_to_binary(Text)) ++ " ...... ok!",
             ReplyBody = util:make_xml_bin(
@@ -108,11 +126,11 @@ handle_event({text_msg, TextMessage, _From, Type, ReplyTo}, State) ->
                                       []},
                                      {text, [{c, Reply}], []}
                                     ]}),
-            baiduhi:send_raw_message(Type, ReplyTo, ReplyBody);
+            baiduhi:send_raw_message(Type, ReplyTo, ReplyBody),
+            {noreply, State};
         _Other ->
-            ok
-    end,
-    {ok, State};
+            {noreply, State}
+    end;
 handle_event({add_friend, Imid, RequestNote}, State) ->
     case RequestNote of
         "hi" ++ _ ->

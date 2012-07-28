@@ -234,24 +234,6 @@ handle_info({impacket, {{msg, _, notify, _}, [{method,"msg_notify"}|Params], Xml
                 true ->
                     {noreply, State}
             end;
-        "!status " ++ What ->
-            %% 1 在线, 无消息
-            %% 2 忙碌
-            %% 3 离开
-            %% 4 隐身, 无消息
-            %% 5 离线, 但是能收到消息
-            %% self() ! {sendpkt, protocol_helper:'user#set'([{status, util:to_list("2;" ++ What)}])},
-            self() ! {sendpkt, protocol_helper:'user#set'([{personal_comment, util:to_list(What)}])},
-            {noreply, State};
-        "!busy " ++ What ->
-            self() ! {sendpkt, protocol_helper:'user#set'([{status, util:to_list("2;" ++ What)}])},
-            {noreply, State};
-        "!away " ++ What ->
-            self() ! {sendpkt, protocol_helper:'user#set'([{status, util:to_list("3;" ++ What)}])},
-            {noreply, State};
-        "!online" ++ _ ->
-            self() ! {sendpkt, protocol_helper:'user#set'([{status, util:to_list("1;")}])},
-            {noreply, State};
         "!music " ++ What ->
             case string:tokens(What, " - ") of
                 [Name, Author] ->
