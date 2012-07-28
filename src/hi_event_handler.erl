@@ -115,7 +115,7 @@ handle_event({text_msg, TextMessage, _From, Type, ReplyTo}, State) ->
             baiduhi:set_info(status, util:to_list("2;" ++ What)),
             {ok, State};
         "!away " ++ What ->
-            baiduhi:set_info(status, "3;" ++ binary_to_list(What)),
+            baiduhi:set_info(status, "3;" ++ binary_to_list(unicode:characters_to_binary(What))),
             {ok, State};
         "!online" ++ _ ->
             baiduhi:set_info(status, "1;"),
