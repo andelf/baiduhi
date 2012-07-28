@@ -74,7 +74,7 @@ init([]) ->
 %%                          remove_handler
 %% @end
 %%--------------------------------------------------------------------
-handle_event({text_msg, TextMessage, _From, Type, ReplyTo}, State) ->
+handle_event({text_msg, TextMessage, From, Type, ReplyTo}, State) ->
     case TextMessage of
         "!qr " ++ Text ->
             case chart_api:make_chart({qr, Text}) of
