@@ -226,7 +226,7 @@ reload_code(MessageCallbackFun) ->
                               fun({mod, Mod}, AccIn) ->
                                       case code:load_file(Mod) of
                                           {module, Mod} ->
-                                              io:format("~sload ~p ok~n", [AccIn, Mod]);
+                                              io:format("~sload ~p ok~n", [AccIn, Mod]),
                                               io_lib:format("~sload ~p ok~n", [AccIn, Mod]);
                                           {error, Error} ->
                                               io_lib:format("~sload ~p error: ~p~n", [AccIn, Mod, Error])
