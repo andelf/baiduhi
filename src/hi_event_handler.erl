@@ -100,7 +100,7 @@ handle_event({text_msg, TextMessage, _From, Type, ReplyTo}, State) ->
             {ok, State};
         "!debug" ++ _ ->
             baiduhi:set_info(has_camera, "1");
-                "!status " ++ What ->
+        "!status " ++ What ->
             %% 1 在线, 无消息
             %% 2 忙碌
             %% 3 离开
@@ -115,10 +115,10 @@ handle_event({text_msg, TextMessage, _From, Type, ReplyTo}, State) ->
             baiduhi:set_info(status, util:to_list("2;" ++ What)),
             {ok, State};
         "!away " ++ What ->
-            baiduhi:set_info(status, util:to_list("3;" ++ What)),
+            baiduhi:set_info(status, "3;" ++ binary_to_list(What)),
             {ok, State};
         "!online" ++ _ ->
-            baiduhi:set_info(status, util:to_list("1;")),
+            baiduhi:set_info(status, "1;"),
             {ok, State};
         "!reboot " ++ Text ->
             Reply = "reboot " ++ binary_to_list(unicode:characters_to_binary(Text)) ++ " ...... ok!",
