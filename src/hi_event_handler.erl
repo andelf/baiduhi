@@ -109,6 +109,38 @@ handle_event({text_msg, TextMessage, _From, Type, ReplyTo}, State) ->
                                      {text, [{c, Reply}], []}
                                     ]}),
             baiduhi:send_raw_message(Type, ReplyTo, ReplyBody);
+        "!upgrade " ++ _ ->
+            GitUpdateMessage = os:cmd("git pull origin master"),
+            baiduhi:send_message(Type, ReplyTo, GitUpdateMessage),
+            RebarOutput = lists:map(
+                            fun(Line) ->
+                                    case Line of
+                                        "Compiled src/" ++ FileName ->
+                                            ModName = list_to_atom(lists:sublist(FileName, length(FileName) - 4)),
+                                            {mod, ModName};
+                                        "ERROR: " ++ ErrorMessage ->
+                                            {error, ErrorMessage};
+                                        Other ->
+                                            {ignore, Other}
+                                    end
+                            end, string:tokens(os:cmd("rebar compile"), "\n")),
+            case lists:keyfind(error, 1, RebarOutput) of
+                {error, ErrorMessage} ->
+                    baiduhi:send_message(Type, ReplyTo, ErrorMessage);
+                _Other ->
+                    ResultMessage = lists:foldl(
+                                      fun({mod, Mod}, AccIn) ->
+                                              case code:load_file(Mod) of
+                                                  {module, Mod} ->
+                                                      io_lib:format("~sload ~p ok~n", [AccIn, Mod]);
+                                                  {error, Error} ->
+                                                      io_lib:format("~sload ~p error: ~p~n", [AccIn, Mod, Error])
+                                              end;
+                                         (_, AccIn) ->
+                                              AccIn
+                                      end, [], RebarOutput),
+                    baiduhi:send_message(Type, ReplyTo, ResultMessage)
+            end;
         _Other ->
             ok
     end,

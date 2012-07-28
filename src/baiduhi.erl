@@ -45,15 +45,15 @@ set_info(Infos) ->
 
 
 send_single_message(To, Message) ->
-    send_msg(1, To, Message).
+    send_message(1, To, Message).
 
 send_group_message(To, Message) ->
     %% group message
-    send_msg(2, To, Message).
+    send_message(2, To, Message).
 
 send_mchat_message(To, Message) ->
     %% group message
-    send_msg(3, To, Message).
+    send_message(3, To, Message).
 
 %% contacts
 query_contact(Imid) ->
@@ -384,7 +384,7 @@ debug_online(P) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-send_msg(Type, To, Message) ->
+send_message(Type, To, Message) ->
     ReplyBody = util:make_xml_bin(
                   {msg, [], [{font, [{n, "Fixedsys"},
                                      {s, 10}, {b, 0}, {i, 0}, {ul, 0}, {c, 16#0000CC},

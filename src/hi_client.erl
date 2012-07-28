@@ -43,9 +43,9 @@
 %% @end
 %%--------------------------------------------------------------------
 start_link() ->
-    start_link("image_help", "loveimage").
+    %%start_link("image_help", "loveimage").
     %%start_link("vsop_help", "love_vsop").
-    %%start_link("video_help", "lovevideo").
+    start_link("video_help", "lovevideo").
     %%start_link("fledna", "lovelili").
 start_link(Username, Password) ->
     gen_server:start_link({local, ?SERVER}, ?MODULE,
