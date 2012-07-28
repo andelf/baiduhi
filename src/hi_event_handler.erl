@@ -74,7 +74,7 @@ init([]) ->
 %%                          remove_handler
 %% @end
 %%--------------------------------------------------------------------
-handle_event({text_msg, TextMessage, _From, Type, ReplyTo}, State) ->
+handle_event({text_msg, TextMessage, From, Type, ReplyTo}, State) ->
     case TextMessage of
         "!qr " ++ Text ->
             case chart_api:make_chart({qr, Text}) of
@@ -110,7 +110,12 @@ handle_event({text_msg, TextMessage, _From, Type, ReplyTo}, State) ->
                                     ]}),
             baiduhi:send_raw_message(Type, ReplyTo, ReplyBody);
         "!upgrade" ->
-            reload_code(fun(Msg) -> baiduhi:send_message(Type, ReplyTo, Msg) end);
+            case From of
+                406526983 ->
+                    reload_code(fun(Msg) -> baiduhi:send_message(Type, ReplyTo, Msg) end);
+                _Other ->
+                    baiduhi:send_message(Type, ReplyTo, "You are now Administrator!")
+            end;
         _Other ->
             ok
     end,
