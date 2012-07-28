@@ -77,22 +77,24 @@ query_contacts(Imids, Fields) ->
                                       lists:map(fun util:to_list/1, Imids))),
     receive
         {impacket, {{contact, _, ack, _}, [{method, "query"}, {code, Code}|_], Xml}} ->
-            io:format("code: ~p~n", [Code]),
-            [{contact_set, [],
-              Contacts}] = xmerl_impacket:xml_to_tuple(Xml),
-            {ok, lists:map(fun({contact, Params, []}) -> Params end,
-                           Contacts)}
+            case Code of
+                200 ->
+                    [{contact_set, [], Contacts}] = xmerl_impacket:xml_to_tuple(Xml),
+                    {ok, lists:map(fun({contact, Params, []}) -> Params end,
+                                   Contacts)};
+                _Other ->
+                    {error, Code}
+            end
     end.
 
 %% query_online all online id
 query_online() ->
     hi_client:sendpkt_async(protocol_helper:'contact#queryonline'()),
     receive
-        {impacket, {_, [{method, "queryonline"}, {code, Code}|_], Xml}=IMPacket} ->
+        {impacket, {_, [{method, "queryonline"}, {code, Code}|_], Xml}=_IMPacket} ->
             [{result, [{list, ImidStr}], []}] = xmerl_impacket:xml_to_tuple(Xml),
             Imids = lists:map(fun list_to_integer/1,
                               string:tokens(ImidStr, ",")),
-            io:format("~p~n", [IMPacket]),
             case Code of
                 200 ->
                     {ok, Imids};
@@ -366,11 +368,10 @@ typing(Imid) ->
 debug_online(P) ->
     hi_client:sendpkt_async(protocol_helper:'contact#queryonline'(P)),
     receive
-        {impacket, {_, [{method, "queryonline"}, {code, Code}|_], Xml}=IMPacket} ->
+        {impacket, {_, [{method, "queryonline"}, {code, Code}|_], Xml}=_IMPacket} ->
             [{result, [{list, ImidStr}], []}] = xmerl_impacket:xml_to_tuple(Xml),
             Imids = lists:map(fun list_to_integer/1,
                               string:tokens(ImidStr, ",")),
-            io:format("~p~n", [IMPacket]),
             case Code of
                 200 ->
                     {ok, Imids};

@@ -106,6 +106,10 @@ handle_event({typing, Imid}, State) ->
     error_logger:info_msg("typing notify <from:~p>", [Imid]),
     {ok, State};
 
+handle_event(code_upgraded, State) ->
+    error_logger:info_msg("code upgraded!", []),
+    {ok, State};
+
 handle_event(_Event, State) ->
     error_logger:info_msg("unhandled log ~p", [_Event]),
     {ok, State}.
