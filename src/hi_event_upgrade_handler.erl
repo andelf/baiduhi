@@ -189,5 +189,5 @@ reload_code(MessageCallbackFun) ->
                               end, [], RebarOutput),
             MessageCallbackFun(ResultMessage)
     end,
-    hi_event:add_handler(hi_event_handler, []),
+    hi_event:add_sup_handler(hi_event_handler, []),
     hi_event:code_upgraded().

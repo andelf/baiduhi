@@ -82,6 +82,7 @@ handle_call({qr, Text}, _From, State) ->
             {reply, {error, "Unkown Error!"}, State}
     end;
 handle_call({egd, Text}, _From, State) ->
+    %% latin letters only
     Im = egd:create(300,20),
     Black = egd:color({0,0,0}),
     Red = egd:color({255,0,0}),
@@ -90,7 +91,7 @@ handle_call({egd, Text}, _From, State) ->
 
     Filename = filename:join([code:priv_dir(percept), "fonts", "6x11_latin1.wingsfont"]),
     Font = egd_font:load(Filename),
-    egd:text(Im, {30, 0}, Font, util:to_list(Text), Black),
+    egd:text(Im, {30, 0}, Font, Text, Black),
     Bin = egd:render(Im, png),
     egd:destroy(Im),
     Reply = {ok, png, Bin},

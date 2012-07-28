@@ -25,7 +25,7 @@ start_link() ->
     gen_event:start_link({local, ?SERVER}).
 
 add_handler(Handler, Args) ->
-    gen_event:add_handler(?SERVER, Handler, Args).
+    gen_event:add_sup_handler(?SERVER, Handler, Args).
 
 delete_handler(Handler, Args) ->
     gen_event:delete_handler(?SERVER, Handler, Args).
