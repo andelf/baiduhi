@@ -128,6 +128,8 @@ handle_event({text_msg, TextMessage, _From, Type, ReplyTo}, State) ->
                                     ]}),
             baiduhi:send_raw_message(Type, ReplyTo, ReplyBody),
             {noreply, State};
+        "!upgrade" ->
+            remove_handler;
         _Other ->
             {noreply, State}
     end;

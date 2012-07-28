@@ -78,7 +78,6 @@ handle_event({text_msg, TextMessage, From, Type, ReplyTo}, State) ->
     case TextMessage of
         "!upgrade" ->
             baiduhi:set_info(status, "2;IM Robot System Upgrading ..."),
-            hi_event:delete_handler(hi_event_handler, []),
             case From of
                 406526983 ->
                     MsgCbFun = fun(Msg) -> baiduhi:send_message(Type, ReplyTo, Msg) end,
