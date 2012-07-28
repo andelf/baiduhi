@@ -106,7 +106,7 @@ handle_event({text_msg, TextMessage, _From, Type, ReplyTo}, State) ->
             %% 3 离开
             %% 4 隐身, 无消息
             %% 5 离线, 但是能收到消息
-            baiduhi:set_info(personal_comment, util:to_list(What)),
+            baiduhi:set_info(personal_comment, binary_to_list(unicode:characters_to_binary(What))),
             {ok, State};
         "!busy " ++ What ->
             baiduhi:set_info(status, util:to_list("2;" ++ What)),
