@@ -130,6 +130,10 @@ handle_event({typing, Imid}, State) ->
     baiduhi:typing(Imid),
     {ok, State};
 
+handle_event(code_upgraded, State) ->
+    baiduhi:set_info(status, "1;"),
+    {ok, State};
+
 handle_event(_Event, State) ->
     {ok, State}.
 
