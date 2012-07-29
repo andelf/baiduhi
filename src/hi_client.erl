@@ -26,7 +26,6 @@
 -record(state, {sock,
                 username,
                 config=[],
-                uid=0,
                 stage=0,
                 aeskey=[]
                }).
@@ -43,10 +42,15 @@
 %% @end
 %%--------------------------------------------------------------------
 start_link() ->
-    %%start_link("image_help", "loveimage").
-    %%start_link("vsop_help", "love_vsop").
-    start_link("video_help", "lovevideo").
-    %%start_link("fledna", "lovelili").
+    Filename = filename:join(code:priv_dir(baiduhi), "baiduhi.conf"),
+    case file:consult(Filename) of
+        {ok, [{baiduhi, Conf}]} ->
+            {username, Username} = lists:keyfind(username, 1, Conf),
+            {password, Password} = lists:keyfind(password, 1, Conf),
+            start_link(Username, Password);
+        Other ->
+            {error, Other}
+    end.
 start_link(Username, Password) ->
     gen_server:start_link({local, ?SERVER}, ?MODULE,
                           [{username, Username}, {password, Password}], []).
@@ -160,8 +164,7 @@ handle_info({stage4, {Seed, _KeepAliveSpace, S4Data}},
                           aeskey=AESKey}};
 %% login:login
 handle_info({impacket, {{security, _, ack, _}, _, Xml}},
-            #state{config=Config,
-                   stage=on_security_response} = State) ->
+            #state{config=Config, stage=on_security_response} = State) ->
     {password, Password} = lists:keyfind(password, 1, Config),
     {seed, Seed} = lists:keyfind(seed, 1, Config),
     [{verify, RequestParams, _}] = xmerl_impacket:xml_to_tuple(Xml),
@@ -187,8 +190,7 @@ handle_info({impacket, {{login, _, ack, _}, [{method,"login"},{code,200}|_], Xml
     hi_state:set(uid, Uid),
     self() ! {sendpkt, protocol_helper:'user#login_ready'()},
     %% empty config state, for safty
-    {noreply, State#state{stage=on_login_ready_response,
-                          config=[], uid=Uid}};
+    {noreply, State#state{stage=on_login_ready_response, config=[]}};
 handle_info({impacket, {{login, _, ack, _}, [{method,"login"},{code,Code}|_], _}},
             #state{stage=on_login_login_response} = State) ->
     io:format("~w~n", [{code, Code}]),

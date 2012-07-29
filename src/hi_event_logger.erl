@@ -75,7 +75,8 @@ init([]) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_event(login_ready, State) ->
-    error_logger:info_msg("login ready"),
+    error_logger:info_msg("login ready: username=~p id=~p", [hi_state:get(username),
+                                                             hi_state:uid()]),
     {ok, State};
 handle_event({contact_notify, Imid, Params}, State) ->
     error_logger:info_msg("contact:notify imid:~s ~180p", [Imid, Params]),
@@ -110,11 +111,9 @@ handle_event(code_upgraded, State) ->
     error_logger:info_msg("code upgraded!", []),
     {ok, State};
 
-handle_event(_Event, State) ->
-    error_logger:info_msg("unhandled log ~p", [_Event]),
+handle_event(Event, State) ->
+    error_logger:info_msg("unhandled log ~p", [Event]),
     {ok, State}.
-
-
 
 %%--------------------------------------------------------------------
 %% @private
