@@ -25,8 +25,8 @@
 
 -record(state, {sock,
                 username,
+                stage,
                 config=[],
-                stage=0,
                 aeskey=[]
                }).
 
@@ -200,7 +200,7 @@ handle_info({impacket, {{user, _, ack, _}, [{method,"login_ready"},{code,200}|_]
             #state{sock=Sock, stage=on_login_ready_response} = State) ->
     hi_heartbeat:set_sock(Sock),
     hi_heartbeat:set_timeout(40000),
-    hi_event:login_ready(),
+    hi_event:user_login_ready(),
     {noreply, State#state{stage=normal}};
 %% ----------------------------------------
 %% Handle request
@@ -222,8 +222,8 @@ handle_info({impacket, {{msg, _, notify, _}, [{method,"msg_notify"}|Params], Xml
     IncomeTextMessage = msg_fmt:msg_to_list(Xml),
     [IncomeMessage] = xmerl_impacket:xml_to_tuple(Xml),
     %% events
-    hi_event:text_msg(IncomeTextMessage, From, Type, ReplyTo),
-    hi_event:full_msg(IncomeMessage, From, Type, ReplyTo),
+    hi_event:text_msg_notify(IncomeTextMessage, From, Type, ReplyTo),
+    hi_event:msg_notify(IncomeMessage, From, Type, ReplyTo),
     case IncomeTextMessage of
         "!quit mul" ++ _ ->
             if
@@ -281,7 +281,7 @@ handle_info({impacket, {{friend, _, notify, _}, [{method,"add_notify"}|_], Xml}}
     [{add_notify, Attrs, _}] = xmerl_impacket:xml_to_tuple(Xml),
     {imid, From} = lists:keyfind(imid, 1, Attrs),
     {request_note, RequestNote} = lists:keyfind(request_note, 1, Attrs),
-    hi_event:add_friend(From, RequestNote),
+    hi_event:friend_add_notify(From, RequestNote),
     {noreply, State};
 
 %% kickout

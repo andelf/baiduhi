@@ -11,7 +11,7 @@
 %% API
 -export([start_link/0, add_handler/2, delete_handler/2]).
 
--export([login_ready/0, contact_notify/2, text_msg/4, full_msg/4, add_friend/2,
+-export([user_login_ready/0, contact_notify/2, text_msg_notify/4, msg_notify/4, friend_add_notify/2,
         blink/1, typing/1, code_upgraded/0]).
 -export([xxxx/1]).
 
@@ -34,21 +34,24 @@ delete_handler(Handler, Args) ->
 xxxx(What) ->
     gen_event:notify(?SERVER, {xxx, What}).
 
-login_ready() ->
-    gen_event:notify(?SERVER, login_ready).
+%% 约定, 一般消息名为 Command_Method
+user_login_ready() ->
+    gen_event:notify(?SERVER, user_login_ready).
 
 contact_notify(Imid, What) ->
     gen_event:notify(?SERVER, {contact_notify, Imid, What}).
 
-full_msg(Message, From, Type, ReplyTo) ->
-    gen_event:notify(?SERVER, {full_msg, Message, From, Type, ReplyTo}).
+%% raw message
+msg_notify(Message, From, Type, ReplyTo) ->
+    gen_event:notify(?SERVER, {msg_notify, Message, From, Type, ReplyTo}).
 
-text_msg(Text, From, Type, ReplyTo) ->
-    gen_event:notify(?SERVER, {text_msg, Text, From, Type, ReplyTo}).
+text_msg_notify(Text, From, Type, ReplyTo) ->
+    gen_event:notify(?SERVER, {text_msg_notify, Text, From, Type, ReplyTo}).
 
-add_friend(Imid, RequestNote) ->
-    gen_event:notify(?SERVER, {add_friend, Imid, RequestNote}).
+friend_add_notify(Imid, RequestNote) ->
+    gen_event:notify(?SERVER, {friend_add_notify, Imid, RequestNote}).
 
+%% cm event name
 blink(Imid) ->
     gen_event:notify(?SERVER, {blink, Imid}).
 

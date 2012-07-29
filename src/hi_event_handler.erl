@@ -74,7 +74,7 @@ init([]) ->
 %%                          remove_handler
 %% @end
 %%--------------------------------------------------------------------
-handle_event({text_msg, TextMessage, From, Type, ReplyTo}, State) ->
+handle_event({text_msg_notify, TextMessage, From, Type, ReplyTo}, State) ->
     case TextMessage of
         "!egd " ++ Text ->
             case chart_api:make_chart({egd, Text}) of
@@ -157,7 +157,7 @@ handle_event({text_msg, TextMessage, From, Type, ReplyTo}, State) ->
         _Other ->
             {ok, State}
     end;
-handle_event({add_friend, Imid, RequestNote}, State) ->
+handle_event({friend_add_notify, Imid, RequestNote}, State) ->
     case RequestNote of
         "hi" ++ _ ->
             baiduhi:add_friend_reply(true, Imid),
@@ -167,6 +167,7 @@ handle_event({add_friend, Imid, RequestNote}, State) ->
             baiduhi:add_friend_reply(false, Imid, "密码不告诉你")
     end,
     {ok, State};
+
 handle_event({blink, Imid}, State) ->
     baiduhi:blink(Imid),
     {ok, State};

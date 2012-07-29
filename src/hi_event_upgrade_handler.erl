@@ -74,7 +74,7 @@ init([]) ->
 %%                          remove_handler
 %% @end
 %%--------------------------------------------------------------------
-handle_event({text_msg, TextMessage, From, Type, ReplyTo}, State) ->
+handle_event({text_msg_notify, TextMessage, From, Type, ReplyTo}, State) ->
     case TextMessage of
         "!upgrade" ->
             baiduhi:set_info(status, "2;IM Robot System Upgrading ..."),

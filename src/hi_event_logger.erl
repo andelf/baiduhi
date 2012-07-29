@@ -74,28 +74,28 @@ init([]) ->
 %%                          remove_handler
 %% @end
 %%--------------------------------------------------------------------
-handle_event(login_ready, State) ->
+handle_event(user_login_ready, State) ->
     error_logger:info_msg("login ready: username=~p id=~p", [hi_state:get(username),
                                                              hi_state:uid()]),
     {ok, State};
 handle_event({contact_notify, Imid, Params}, State) ->
     error_logger:info_msg("contact:notify imid:~s ~180p", [Imid, Params]),
     {ok, State};
-handle_event({full_msg, _Message, _From, _Type, _ReplyTo}, State) ->
+handle_event({msg_notify, _Message, _From, _Type, _ReplyTo}, State) ->
     %% ConvertType = fun(1) -> "SINGLE";
     %%                  (2) -> "GROUP";
     %%                  (3) -> "MCHAT"
     %%               end,
     %% error_logger:info_msg("~s full msg <from:~p> <replyto:~p>:~n~100p~n", [ConvertType(Type), From, ReplyTo, Message]),
     {ok, State};
-handle_event({text_msg, Text, From, Type, ReplyTo}, State) ->
+handle_event({text_msg_notify, Text, From, Type, ReplyTo}, State) ->
     ConvertType = fun(1) -> "SINGLE";
                      (2) -> "GROUP";
                      (3) -> "MCHAT"
                   end,
     error_logger:info_msg("~s text msg <from:~p> <replyto:~p>: ~ts", [ConvertType(Type), From, ReplyTo, Text]),
     {ok, State};
-handle_event({add_friend, Imid, RequestNote}, State) ->
+handle_event({friend_add_notify, Imid, RequestNote}, State) ->
     error_logger:info_msg("add friend request <from:~p>: ~p", [Imid, RequestNote]),
     {ok, State};
 
