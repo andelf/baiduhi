@@ -88,7 +88,6 @@ handle_call({egd, Text}, _From, State) ->
     Red = egd:color({255,0,0}),
     egd:filledRectangle(Im, {30,14}, {270,19}, Red),
     egd:rectangle(Im, {30,14}, {270,19}, Black),
-
     Filename = filename:join([code:priv_dir(percept), "fonts", "6x11_latin1.wingsfont"]),
     Font = egd_font:load(Filename),
     egd:text(Im, {30, 0}, Font, Text, Black),

@@ -72,7 +72,7 @@ stop() ->
 %%--------------------------------------------------------------------
 init(Config) ->
     {username, Username} = lists:keyfind(username, 1, Config),
-    logger:log(normal, "username=~s password=******", [Username]),
+    %% logger:log(normal, "username=~s password=******", [Username]),
     {ok, Sock} = gen_tcp:connect('123.125.113.37', 443, [{active, false}, binary]),
     {ok, #state{sock=Sock, username=Username, config=Config, stage=initial}, 0}.
 
@@ -128,7 +128,6 @@ handle_cast(_Msg, State) ->
 %% ------------- login process ----------------------
 %% initial login stage1
 handle_info(timeout, #state{sock=Sock, config=Config, stage=initial} = State) ->
-    logger:log(debug, "handle_info() got timeout"),
     {username, Username} = lists:keyfind(username, 1, Config),
     ok = gen_tcp:controlling_process(Sock, hi_dispatcher:get_pid()),
     hi_dispatcher:set_client(self()),
@@ -139,10 +138,8 @@ handle_info(timeout, #state{sock=Sock, config=Config, stage=initial} = State) ->
     gen_tcp:send(Sock, protocol:make_packet(stage, ?CT_FLAG_CON_S1, S1Data)),
     {noreply, State#state{username=Username, stage=stage1}};
 %% stage 2, stage3
-handle_info({stage2, {ConMethod, RootKeyNo, _RootKeyLen, S2Data}},
+handle_info({stage2, {_ConMethod, RootKeyNo, _RootKeyLen, S2Data}},
             #state{sock=Sock, stage=stage1} = State) ->
-    logger:log(debug, "S2 ConMethod=~p", [ConMethod]),
-    logger:log(debug, "S2 RootKeyNo=~p", [RootKeyNo]),
     S1Key = lookup_root_pub_key(RootKeyNo),
     S2Key = util:pkcs1_to_rsa_pubkey(util:rsa_public_decrypt(S2Data, S1Key)),
     %% 用S2Key加密S3 pub key
@@ -156,7 +153,7 @@ handle_info({stage4, {Seed, _KeepAliveSpace, S4Data}},
     S3PrvKey = util:pkcs1_to_rsa_prvkey(?HiPrvKey),
     AESKey = util:rsa_private_decrypt(S4Data, S3PrvKey),
     hi_dispatcher:set_aeskey(AESKey),
-    logger:log(normal, "aes key: ~p", [util:to_hex_string(AESKey)]),
+    error_logger:info_msg("aes key: ~p", [util:to_hex_string(AESKey)]),
     self() ! {sendpkt, protocol_helper:'security#verify'(login)},
     {noreply, State#state{stage=on_security_response,
                           config=[{seed, Seed}|Config],
@@ -173,7 +170,7 @@ handle_info({impacket, {{security, _, ack, _}, _, Xml}},
     {v_period, V_Period} = lists:keyfind(v_period, 1, RequestParams),
     case lists:keyfind(v_code, 1, RequestParams) of
         {v_code, V_Code} ->
-            logger:log(normal, "v_code: ~s", [V_Code]);
+            error_logger:info_msg("v_code: ~s", [V_Code]);
         false ->
             io:format("v_code url: http://vcode.im.baidu.com/cgi-bin/genimg?~s~n", [V_Url]),
             V_Code = io:get_chars("plz input code>", 4)
@@ -301,7 +298,6 @@ handle_info({impacket, {{cm, _, request, _}, [{method, "typ"}|Params], _}},
     hi_event:typing(From),
     {noreply, State};
 handle_info({impacket, {{cm, _, request, _}, [{method, "scene"}|_], _}}, State) ->
-    logger:log(normal, "cm:scene request"),
     {noreply, State};
 %%--------------------------------------------------------------------
 %% handle ack

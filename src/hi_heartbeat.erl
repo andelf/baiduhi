@@ -117,15 +117,13 @@ handle_cast(_Msg, State) ->
 handle_info(timeout, #state{errors=2} = State) ->
     {stop, "heartbeat with no ack", State};
 handle_info(timeout, #state{sock=Sock, timeout=Timeout, errors=Errors} = State) ->
-    logger:log(debug, "heartbeat!"),
     ok = gen_tcp:send(Sock, protocol:make_packet(heartbeat)),
     receive
         heartbeat ->
-            logger:log(debug, "heartbeat ack!"),
             {noreply, State#state{errors=0}, Timeout}
     after
         Timeout ->
-            logger:log(error, "heartbeat with no ack! ~w times", [Errors]),
+            error_logger:error_msg("heartbeat with no ack! ~w times", [Errors]),
             {noreply, State#state{errors=Errors+1}, 0}
     end;
 

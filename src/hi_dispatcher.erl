@@ -77,7 +77,6 @@ get_pid() ->
 %% @end
 %%--------------------------------------------------------------------
 init([]) ->
-    logger:log(normal, "hi_dispatcher init()!"),
     {ok, #state{timeout=?TIMEOUT}}.
 
 %%--------------------------------------------------------------------
@@ -107,7 +106,7 @@ handle_call({get_pid}, _From, State) ->
     Reply = self(),
     {reply, Reply, State};
 handle_call(_Request, _From, State) ->
-    logger:log(error, "hi_dispatcher req ~p from ~p state ~p", [_Request, _From, State]),
+    io:format("hi_dispatcher req ~p from ~p state ~p", [_Request, _From, State]),
     Reply = ok,
     {reply, Reply, State}.
 
