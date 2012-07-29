@@ -155,7 +155,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 reload_code(MessageCallbackFun) ->
-    TopDir = code:libdir(baiduhi),
+    TopDir = code:lib_dir(baiduhi),
     GitUpdateMessage = os:cmd("cd " ++ TopDir ++ " && git pull origin master"),
     MessageCallbackFun(GitUpdateMessage),
     RebarOutput = lists:map(
