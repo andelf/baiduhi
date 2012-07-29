@@ -155,7 +155,8 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 reload_code(MessageCallbackFun) ->
-    GitUpdateMessage = os:cmd("git pull origin master"),
+    TopDir = code:libdir(baiduhi),
+    GitUpdateMessage = os:cmd("cd " ++ TopDir ++ " && git pull origin master"),
     MessageCallbackFun(GitUpdateMessage),
     RebarOutput = lists:map(
                     fun(Line) ->
@@ -169,7 +170,7 @@ reload_code(MessageCallbackFun) ->
                                 Other ->
                                     {ignore, Other}
                             end
-                    end, string:tokens(os:cmd("./rebar compile"), "\n")),
+                    end, string:tokens(os:cmd("cd " ++ TopDir ++ " && ./rebar compile"), "\n")),
     case lists:keyfind(error, 1, RebarOutput) of
         {error, ErrorMessage} ->
             MessageCallbackFun(ErrorMessage);
