@@ -94,7 +94,8 @@ init(Config) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_call({sendpkt_async, {{_,_,request,Seq},_,_} = IMPacket}, From, #state{sock=Sock, aeskey=AESKey} = State) ->
+handle_call({sendpkt_async, {{_,_,request,Seq},_,_} = IMPacket}, From,
+            #state{sock=Sock, aeskey=AESKey} = State) ->
     hi_state:set(Seq, From),                    % register callback path
     Data = protocol:encode_impacket(IMPacket),
     Reply = gen_tcp:send(Sock, protocol:make_packet(normal, Data, AESKey)),
@@ -178,7 +179,8 @@ handle_info({impacket, {{security, _, ack, _}, _, Xml}},
             io:format("v_code url: http://vcode.im.baidu.com/cgi-bin/genimg?~s~n", [V_Url]),
             V_Code = io:get_chars("plz input code>", 4)
     end,
-    self() ! {sendpkt, protocol_helper:'login#login'({V_Url, V_Time, V_Period, V_Code}, protocol:build_dynamic_password(Password, Seed))},
+    self() ! {sendpkt, protocol_helper:'login#login'({V_Url, V_Time, V_Period, V_Code},
+                                                     protocol:build_dynamic_password(Password, Seed))},
     {noreply, State#state{stage=on_login_login_response}};
 %% user:login_ready
 handle_info({impacket, {{login, _, ack, _}, [{method,"login"},{code,200}|_], Xml}},
@@ -237,8 +239,7 @@ handle_info({impacket, {{contact, _, notify, _}, [{method, "notify"}|_Params], X
 handle_info({impacket, {{msg, _, notify, _}, [{method, "msg_ack_notify"}|_], _}}, State) ->
     {noreply, State};
 
-handle_info({impacket, {{friend, _, notify, _}, [{method,"add_notify"}|_], Xml}},
-            State) ->
+handle_info({impacket, {{friend, _, notify, _}, [{method,"add_notify"}|_], Xml}}, State) ->
     [{add_notify, Attrs, _}] = xmerl_impacket:xml_to_tuple(Xml),
     {imid, From} = lists:keyfind(imid, 1, Attrs),
     {request_note, RequestNote} = lists:keyfind(request_note, 1, Attrs),
@@ -250,13 +251,11 @@ handle_info({impacket,{{login,_,notify,_},[{method,"kickout"}|_], _}}, State) ->
     {stop, normal, State};
 
 %% handle other request
-handle_info({impacket, {{cm, _, request, _}, [{method,"blk"}|Params], _}},
-            State) ->
+handle_info({impacket, {{cm, _, request, _}, [{method,"blk"}|Params], _}}, State) ->
     {uid, From} = lists:keyfind(uid, 1, Params),
     hi_event:blink(From),
     {noreply, State};
-handle_info({impacket, {{cm, _, request, _}, [{method, "typ"}|Params], _}},
-            State) ->
+handle_info({impacket, {{cm, _, request, _}, [{method, "typ"}|Params], _}}, State) ->
     {from, From} = lists:keyfind(from, 1, Params),
     hi_event:typing(From),
     {noreply, State};
@@ -284,7 +283,6 @@ handle_info(tcp_closed, State) ->
 handle_info(_Info, State) ->
     io:format("hi_client: handle_info() ~p~n", [_Info]),
     {noreply, State}.
-
 
 %%--------------------------------------------------------------------
 %% @private

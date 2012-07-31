@@ -44,7 +44,6 @@ set_info(Infos) ->
             end
     end.
 
-
 send_single_message(To, Message) ->
     send_message(1, To, Message).
 

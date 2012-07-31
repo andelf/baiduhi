@@ -188,6 +188,17 @@ handle_event({text_msg_notify, TextMessage, From, Type, ReplyTo}, State) ->
                     {ok, State}
             end;
         _Other ->
+            %% case Type of
+            %%     1 ->
+            %%         case simsimi:get_reply(TextMessage) of
+            %%             {ok, ReplyText} ->
+            %%                 baiduhi:send_message(Type, ReplyTo, ReplyText);
+            %%             _ ->
+            %%                 ok
+            %%         end;
+            %%     _ ->
+            %%         ok                          % no reply mchat/group
+            %% end,
             {ok, State}
     end;
 handle_event({friend_add_notify, Imid, RequestNote}, State) ->
