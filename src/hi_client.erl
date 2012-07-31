@@ -221,49 +221,10 @@ handle_info({impacket, {{msg, _, notify, _}, [{method,"msg_notify"}|Params], Xml
     ReplyTo = if Type =:= 1 -> From; true -> To end,
     IncomeTextMessage = msg_fmt:msg_to_list(Xml),
     [IncomeMessage] = xmerl_impacket:xml_to_tuple(Xml),
-    %% events
+    %% events notify
     hi_event:text_msg_notify(IncomeTextMessage, From, Type, ReplyTo),
     hi_event:msg_notify(IncomeMessage, From, Type, ReplyTo),
-    case IncomeTextMessage of
-        "!quit mul" ++ _ ->
-            if
-                Type =:= 3 ->                   % if multi msg
-                    self() ! {sendpkt, protocol_helper:'multi#quit'(To)},
-                    {noreply, State};
-                true ->
-                    {noreply, State}
-            end;
-        "!music " ++ What ->
-            case string:tokens(What, " - ") of
-                [Name, Author] ->
-                    self() ! {sendpkt, protocol_helper:'user#set'([{music,
-                                                            "\\01" ++ "\\0" ++ util:to_list(Name) ++
-                                                                        "\\0" ++ util:to_list(Author) ++ "\\0" ++
-                                                                        "未知专辑" ++ "\\0"}])};
-                ["off"] ->
-                    self() ! {sendpkt, protocol_helper:'user#set'([{music,
-                                                            "\\00\\0\\0\\0\\0"}])};
-                _Other ->
-                    self() ! {sendpkt, protocol_helper:'user#set'([{music,
-                                                            "\\01" ++ "\\0" ++ util:to_list(What) ++
-                                                                "\\0" ++ "Unkown Author" ++ "\\0" ++
-                                                                "未知专辑" ++ "\\0"}])}
-            end,
-            {noreply, State};
-        "!blk" ++ _ ->
-            self() ! {sendpkt, protocol_helper:'cm#blk'(From)},
-            {noreply, State};
-        "!typ" ++ _ ->
-            if
-                Type =:= 1 ->                   % if not multi msg
-                    self() ! {sendpkt, protocol_helper:'cm#typ'(From)};
-                true ->
-                    ok
-            end,
-            {noreply, State};
-        _Other ->
-            {noreply, State}
-    end;
+    {noreply, State};
 
 %%--------------------------------------------------------------------
 %% message that no need to ack

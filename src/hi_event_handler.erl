@@ -136,6 +136,39 @@ handle_event({text_msg_notify, TextMessage, From, Type, ReplyTo}, State) ->
         "!online" ++ _ ->
             baiduhi:set_info(status, "1;"),
             {ok, State};
+        "!music " ++ What ->
+            case string:tokens(What, " - ") of
+                [Name, Author] ->
+                    baiduhi:set_info(music, "\\01" ++ "\\0" ++ util:to_list(Name) ++
+                                         "\\0" ++ util:to_list(Author) ++ "\\0" ++
+                                         "未知专辑" ++ "\\0");
+                ["off"] ->
+                    baiduhi:set_info(music, "\\00\\0\\0\\0\\0");
+                _Other ->
+                    baiduhi:set_info(music, "\\01" ++ "\\0" ++ util:to_list(What) ++
+                                         "\\0" ++ "Unkown Author" ++ "\\0" ++
+                                         "未知专辑" ++ "\\0")
+            end,
+            {ok, State};
+        "!quit mul" ++ _ ->
+            if
+                Type =:= 3 ->                   % if multi msg
+                    baiduhi:quit_mchat(ReplyTo);
+                true ->
+                    ok
+            end,
+            {ok, State};
+        "!blk" ++ _ ->
+            baiduhi:blink(From),
+            {ok, State};
+        "!typ" ++ _ ->
+            if
+                Type =:= 1 ->                   % if not multi msg
+                    baiduhi:typing(From);
+                true ->
+                    ok
+            end,
+            {ok, State};
         "!reboot " ++ Text ->
             Reply = "reboot " ++ binary_to_list(unicode:characters_to_binary(Text)) ++ " ...... ok!",
             ReplyBody = util:make_xml_bin(
