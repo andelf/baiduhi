@@ -146,7 +146,7 @@ handle_event({text_msg_notify, TextMessage, From, Type, ReplyTo}, State) ->
                     baiduhi:set_info(music, "\\00\\0\\0\\0\\0");
                 _Other ->
                     baiduhi:set_info(music, "\\01" ++ "\\0" ++ util:to_list(What) ++
-                                         "\\0" ++ "Unkown Author" ++ "\\0" ++
+                                         "\\0" ++ "未知艺人" ++ "\\0" ++
                                          "未知专辑" ++ "\\0")
             end,
             {ok, State};
@@ -188,7 +188,9 @@ handle_event({text_msg_notify, TextMessage, From, Type, ReplyTo}, State) ->
                     {ok, State}
             end;
         _Other ->
-            baiduhi:send_message(Type, ReplyTo, "同学您好，我是淘宝网店的客服。你寄回的充气娃娃我们已经帮你修好，马上给你寄回去。但请你别那么残暴的对待她，她毕竟只是个娃娃。充气娃娃寄回来时，所有在场的工作人员都落泪了~"),
+            %% for joking
+            %% baiduhi:send_message(Type, ReplyTo, "同学您好，我是淘宝网店的客服。你寄回的充气娃娃我们已经帮你修好，马上给你寄回去。"
+            %% "但请你别那么残暴的对待她，她毕竟只是个娃娃。充气娃娃寄回来时，所有在场的工作人员都落泪了~"),
             {ok, State}
     end;
 handle_event({friend_add_notify, Imid, RequestNote}, State) ->
