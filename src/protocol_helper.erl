@@ -26,7 +26,7 @@
 'login#login'(AddtionHeaders, DynamicPassword) ->
     Params = [{method, "login"}|AddtionHeaders],
     Timestamp = util:to_list(util:timestamp()),
-    Body = util:make_xml_bin(
+    Body = util:tuple_to_xml(
              {login, [], [{user, [{account, hi_state:get(username)},
                                   {password, DynamicPassword},
                                   {localtime, Timestamp},
@@ -110,7 +110,7 @@
     {{friend, "1.0", request, hi_state:seq()},
      [{method, "add_ack"},
       {uid, hi_state:uid()}],
-     util:make_xml_bin(
+     util:tuple_to_xml(
        {add_ack, [{time, util:to_list(util:timestamp())},
                   {agree, util:to_list(Agree)},
                   {imid, util:to_list(Imid)},
@@ -121,7 +121,7 @@
     {{friend, "1.0", request, hi_state:seq()},
      [{method, "add"},
       {uid, hi_state:uid()}|VerifyHeaders],
-     util:make_xml_bin(
+     util:tuple_to_xml(
        {add_friend, [{time, util:to_list(util:timestamp())},
                      {imid, util:to_list(Imid)},
                      {team, "0"},
@@ -132,7 +132,7 @@
     {{friend, "1.0", request, hi_state:seq()},
      [{method, "delete"},
       {uid, hi_state:uid()}|VerifyHeaders],
-     util:make_xml_bin(
+     util:tuple_to_xml(
        {delete_friend, [{imid, util:to_list(Imid)}], []})}.
 
 %% user
@@ -164,7 +164,7 @@
     {{user, "2.5", request, hi_state:seq()},
      [{method, "set"},
       {uid, hi_state:uid()}],
-     util:make_xml_bin(
+     util:tuple_to_xml(
        {user, [],
         [{account, Infos, []}]
        })}.
@@ -193,7 +193,7 @@
     {{user, "1.10", request, hi_state:seq()},
      [{method, "query"},
       {uid, hi_state:uid()}],
-     util:make_xml_bin(
+     util:tuple_to_xml(
        {'query', [{fields, string:join(Fields, ";")}], []})}.
 
 'user#login_ready'() ->
@@ -202,7 +202,7 @@
     {{user, "1.0", request, hi_state:seq()},
      [{method, "login_ready"},
       {uid, hi_state:uid()}],
-     util:make_xml_bin(
+     util:tuple_to_xml(
        {login, [], [{user, [{status, util:to_list(Status)},
                             {localeid, "2052"},
                             {imversion, "2,1,0,1"},
@@ -225,7 +225,7 @@
      [{method, "query"},
       {uid, hi_state:uid()}],
      %% query is a reversed word
-     util:make_xml_bin(
+     util:tuple_to_xml(
        {'query', [{fields, string:join(Fields, ";")},
                   {id, string:join(ImidList, ";")}],
              []})}.
@@ -272,7 +272,7 @@
      [{method, "set_card"},
       {uid, hi_state:uid()},
       {gid, Gid}],
-     util:make_xml_bin(
+     util:tuple_to_xml(
        {card, InfoAssoc, []})}.
 
 'group#set_card2'(Gid, Member, InfoAssoc) ->
@@ -281,7 +281,7 @@
       {uid, hi_state:uid()},
       {gid, Gid},
       {member, Member}],
-     util:make_xml_bin(
+     util:tuple_to_xml(
        {card, InfoAssoc, []})}.
 
 
@@ -290,7 +290,7 @@
      [{method, "add_member"},
       {uid, hi_state:uid()},
       {gid, Gid}],
-     util:make_xml_bin(
+     util:tuple_to_xml(
        {add_member, [], lists:map(fun(Imid) ->
                                           {member, [{imid, Imid}], []}
                                   end,
@@ -302,7 +302,7 @@
      [{method, "delete_member"},
       {uid, hi_state:uid()},
       {gid, Gid}],
-     util:make_xml_bin(
+     util:tuple_to_xml(
        {delete_member, [], lists:map(fun(Imid) ->
                                              {member, [{imid, Imid}], []}
                                   end,
@@ -323,7 +323,7 @@
      [{method, "join"},
       {uid, hi_state:uid()},
       {gid, Gid}],
-     util:make_xml_bin(
+     util:tuple_to_xml(
        {join_group, [{time, util:to_list(util:timestamp())},
                      {request_note, RequestNote}],
         []})}.
@@ -385,7 +385,7 @@
      [{method, "create"},
       {uid, hi_state:uid()},
       {vendor_name, "我了个去"}],               % useless
-     util:make_xml_bin(
+     util:tuple_to_xml(
        {member_set, [{join_enable, "1"},
                      {add_enable, "1"},
                      {find_enable, "1"},
@@ -413,7 +413,7 @@
      [{method, "add"},
       {uid, hi_state:uid()},
       {mid, Mid}],
-     util:make_xml_bin(
+     util:tuple_to_xml(
        {member_set, [],
         lists:map(fun(Imid) ->
                           {member, [{imid, Imid}], []}

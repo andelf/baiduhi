@@ -78,7 +78,7 @@ query_contacts(Imids, Fields) ->
         {ack, {{contact, _, ack, _}, [{method, "query"}, {code, Code}|_], Xml}} ->
             case Code of
                 200 ->
-                    [{contact_set, [], Contacts}] = xmerl_impacket:xml_to_tuple(Xml),
+                    [{contact_set, [], Contacts}] = util:xml_to_tuple(Xml),
                     {ok, lists:map(fun({contact, Params, []}) -> Params end,
                                    Contacts)};
                 _Other ->
@@ -91,7 +91,7 @@ query_online() ->
     hi_client:sendpkt_async(protocol_helper:'contact#queryonline'()),
     receive
         {ack, {_, [{method, "queryonline"}, {code, Code}|_], Xml}=_IMPacket} ->
-            [{result, [{list, ImidStr}], []}] = xmerl_impacket:xml_to_tuple(Xml),
+            [{result, [{list, ImidStr}], []}] = util:xml_to_tuple(Xml),
             Imids = lists:map(fun list_to_integer/1,
                               string:tokens(ImidStr, ",")),
             case Code of
@@ -106,7 +106,7 @@ query_online(Acc) ->
     hi_client:sendpkt_async(protocol_helper:'contact#queryonline'(lists:max(Acc))),
     receive
         {ack, {_, [{method, "queryonline"}, {code, Code}|_], Xml}=_IMPacket} ->
-            [{result, [{list, ImidStr}], []}] = xmerl_impacket:xml_to_tuple(Xml),
+            [{result, [{list, ImidStr}], []}] = util:xml_to_tuple(Xml),
             Imids = lists:map(fun list_to_integer/1,
                               string:tokens(ImidStr, ",")),
             case Code of
@@ -122,7 +122,7 @@ get_friends() ->
     hi_client:sendpkt_async(protocol_helper:'friend#get_friend'()),
     receive
         {ack, {_, [{method, "get_friend"}, {code, Code}|_], Xml}=_IMPacket} ->
-            [{friend_set, [], FriendNodes}] = xmerl_impacket:xml_to_tuple(Xml),
+            [{friend_set, [], FriendNodes}] = util:xml_to_tuple(Xml),
             FriendAttrs = lists:map(fun({friend, Attr, []}) -> Attr end,
                                     FriendNodes),
             case Code of
@@ -137,7 +137,7 @@ get_teams() ->
     hi_client:sendpkt_async(protocol_helper:'friend#get_team'()),
     receive
         {ack, {_, [{method, "get_team"}, {code, _Code}|_], Xml}=_IMPacket} ->
-            [{team_set, [], TeamNodes}] = xmerl_impacket:xml_to_tuple(Xml),
+            [{team_set, [], TeamNodes}] = util:xml_to_tuple(Xml),
             TeamAttrs = lists:map(fun({team, Attr, []}) -> Attr end,
                                   TeamNodes),
             {ok, TeamAttrs}
@@ -229,7 +229,7 @@ get_groups() ->
     hi_client:sendpkt_async(protocol_helper:'group#get_list'()),
     receive
         {ack, {_, [{method, "get_list"}, {code, _Code}|_], Xml}=_IMPacket} ->
-            [{group_set, [], GroupNodes}] = xmerl_impacket:xml_to_tuple(Xml),
+            [{group_set, [], GroupNodes}] = util:xml_to_tuple(Xml),
             GroupAttrs = lists:map(fun({group, Attr, []}) -> Attr end,
                                    GroupNodes),
             {ok, GroupAttrs}
@@ -241,7 +241,7 @@ get_group(Gid) ->
         {ack, {_, [{method, "get"}, {code, Code}|_], Xml}=_IMPacket} ->
             case Code of
                 200 ->
-                    [{group, Attrs, [ManagerSetNode]}] = xmerl_impacket:xml_to_tuple(Xml),
+                    [{group, Attrs, [ManagerSetNode]}] = util:xml_to_tuple(Xml),
                     {manager_set, [], ManagerNodes} = ManagerSetNode,
                     Managers = lists:map(fun({manager,[{imid,Imid}],[]}) -> Imid end,
                                          ManagerNodes),
@@ -257,7 +257,7 @@ get_group_members(Gid) ->
         {ack, {_, [{method, "get_member"}, {code, Code}|_], Xml}=_IMPacket} ->
             case Code of
                 200 ->
-                    [{member_set, [], MemberNodes}] = xmerl_impacket:xml_to_tuple(Xml),
+                    [{member_set, [], MemberNodes}] = util:xml_to_tuple(Xml),
                     Members = lists:map(fun({member, [{imid,Imid}],[]}) -> Imid end,
                                         MemberNodes),
                     {ok, Members};
@@ -270,14 +270,14 @@ security_verify(What) ->
     hi_client:sendpkt_async(protocol_helper:'security#verify'(What)),
     receive
         {ack, {_, [{method, "verify"}, {code, _Code}|_], Xml}=_IMPacket} ->
-            [{verify, VerifyHeaders, _}] = xmerl_impacket:xml_to_tuple(Xml),
+            [{verify, VerifyHeaders, _}] = util:xml_to_tuple(Xml),
             {ok, VerifyHeaders}
     end.
 security_verify(What, Imid) ->
     hi_client:sendpkt_async(protocol_helper:'security#verify'(What, Imid)),
     receive
         {ack, {_, [{method, "verify"}, {code, _Code}|_], Xml}=_IMPacket} ->
-            [{verify, VerifyHeaders, _}] = xmerl_impacket:xml_to_tuple(Xml),
+            [{verify, VerifyHeaders, _}] = util:xml_to_tuple(Xml),
             {ok, VerifyHeaders}
     end.
 
@@ -293,7 +293,7 @@ create_mchat(Imids) ->
                 200 ->
                     {ok, Mid, []};
                 201 ->
-                    [{fail_list, [], MemberNodes}] = xmerl_impacket:xml_to_tuple(Xml),
+                    [{fail_list, [], MemberNodes}] = util:xml_to_tuple(Xml),
                     FailMembers = lists:map(fun({member, Attrs, []}) -> Attrs end,
                                             MemberNodes),
                     {ok, Mid, FailMembers};
@@ -324,7 +324,7 @@ add_friends_to_mchat(Mid, Imids) ->
                 200 ->
                     {ok, []};
                 201 ->
-                    [{fail_list, [], MemberNodes}] = xmerl_impacket:xml_to_tuple(Xml),
+                    [{fail_list, [], MemberNodes}] = util:xml_to_tuple(Xml),
                     FailMembers = lists:map(fun({member, Attrs, []}) -> Attrs end,
                                             MemberNodes),
                     {ok, FailMembers};
@@ -339,7 +339,7 @@ get_mchat_members(Gid) ->
         {ack, {_, [{method, "get_list"}, {code, Code}|_], Xml}=_IMPacket} ->
             case Code of
                 200 ->
-                    [{member_set, [], MemberNodes}] = xmerl_impacket:xml_to_tuple(Xml),
+                    [{member_set, [], MemberNodes}] = util:xml_to_tuple(Xml),
                     Members = lists:map(fun({member, [{imid,Imid}],[]}) -> Imid end,
                                         MemberNodes),
                     {ok, Members};
@@ -368,7 +368,7 @@ debug_online(P) ->
     hi_client:sendpkt_async(protocol_helper:'contact#queryonline'(P)),
     receive
         {ack, {_, [{method, "queryonline"}, {code, Code}|_], Xml}=_IMPacket} ->
-            [{result, [{list, ImidStr}], []}] = xmerl_impacket:xml_to_tuple(Xml),
+            [{result, [{list, ImidStr}], []}] = util:xml_to_tuple(Xml),
             Imids = lists:map(fun list_to_integer/1,
                               string:tokens(ImidStr, ",")),
             case Code of
@@ -384,7 +384,7 @@ debug_online(P) ->
 %%% Internal functions
 %%%===================================================================
 send_message(Type, To, Message) ->
-    ReplyBody = util:make_xml_bin(
+    ReplyBody = util:tuple_to_xml(
                   {msg, [], [{font, [{n, "Fixedsys"},
                                      {s, 10}, {b, 0}, {i, 0}, {ul, 0}, {c, 16#0000CC},
                                      {cs, 134}],

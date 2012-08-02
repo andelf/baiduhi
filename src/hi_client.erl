@@ -168,7 +168,7 @@ handle_info({impacket, {{security, _, ack, _}, _, Xml}},
             #state{config=Config, stage=on_security_response} = State) ->
     {password, Password} = lists:keyfind(password, 1, Config),
     {seed, Seed} = lists:keyfind(seed, 1, Config),
-    [{verify, RequestParams, _}] = xmerl_impacket:xml_to_tuple(Xml),
+    [{verify, RequestParams, _}] = util:xml_to_tuple(Xml),
     {v_url, V_Url} = lists:keyfind(v_url, 1, RequestParams),
     {v_time, V_Time} = lists:keyfind(v_time, 1, RequestParams),
     {v_period, V_Period} = lists:keyfind(v_period, 1, RequestParams),
@@ -222,7 +222,7 @@ handle_info({impacket, {{msg, _, notify, _}, [{method,"msg_notify"}|Params], Xml
     end,
     ReplyTo = if Type =:= 1 -> From; true -> To end,
     IncomeTextMessage = msg_fmt:msg_to_list(Xml),
-    [IncomeMessage] = xmerl_impacket:xml_to_tuple(Xml),
+    [IncomeMessage] = util:xml_to_tuple(Xml),
     %% events notify
     hi_event:text_msg_notify(IncomeTextMessage, From, Type, ReplyTo),
     hi_event:msg_notify(IncomeMessage, From, Type, ReplyTo),
@@ -232,7 +232,7 @@ handle_info({impacket, {{msg, _, notify, _}, [{method,"msg_notify"}|Params], Xml
 %% message that no need to ack
 handle_info({impacket, {{contact, _, notify, _}, [{method, "notify"}|_Params], Xml}},
             State) ->
-    [{contact, [{imid, Imid}|Params], []}] = xmerl_impacket:xml_to_tuple(Xml),
+    [{contact, [{imid, Imid}|Params], []}] = util:xml_to_tuple(Xml),
     hi_event:contact_notify(Imid, Params),
     {noreply, State};
 
@@ -240,7 +240,7 @@ handle_info({impacket, {{msg, _, notify, _}, [{method, "msg_ack_notify"}|_], _}}
     {noreply, State};
 
 handle_info({impacket, {{friend, _, notify, _}, [{method,"add_notify"}|_], Xml}}, State) ->
-    [{add_notify, Attrs, _}] = xmerl_impacket:xml_to_tuple(Xml),
+    [{add_notify, Attrs, _}] = util:xml_to_tuple(Xml),
     {imid, From} = lists:keyfind(imid, 1, Attrs),
     {request_note, RequestNote} = lists:keyfind(request_note, 1, Attrs),
     hi_event:friend_add_notify(From, RequestNote),

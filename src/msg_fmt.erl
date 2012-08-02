@@ -9,7 +9,7 @@
 -module(msg_fmt).
 
 %% API
--export([make_imgdata/1, img_tag/1, msg_to_list/1]).
+-export([img_tag/1, msg_to_list/1]).
 
 -include_lib("xmerl/include/xmerl.hrl").
 

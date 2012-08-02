@@ -79,7 +79,7 @@ handle_event({text_msg_notify, TextMessage, From, Type, ReplyTo}, State) ->
         "!egd " ++ Text ->
             case chart_api:make_chart({egd, Text}) of
                 {ok, png, Image} ->
-                    ReplyBody = util:make_xml_bin(
+                    ReplyBody = util:tuple_to_xml(
                                   {msg, [], [{font, [{n, "Fixedsys"},
                                                      {s, 10}, {b, 0}, {i, 0}, {ul, 0}, {c, 16#EE9640},
                                                      {cs, 134}],
@@ -95,7 +95,7 @@ handle_event({text_msg_notify, TextMessage, From, Type, ReplyTo}, State) ->
         "!qr " ++ Text ->
             case chart_api:make_chart({qr, Text}) of
                 {ok, png, Image} ->
-                    ReplyBody = util:make_xml_bin(
+                    ReplyBody = util:tuple_to_xml(
                                   {msg, [], [{font, [{n, "Fixedsys"},
                                                      {s, 10}, {b, 0}, {i, 0}, {ul, 0}, {c, 16#EE9640},
                                                      {cs, 134}],
@@ -104,7 +104,7 @@ handle_event({text_msg_notify, TextMessage, From, Type, ReplyTo}, State) ->
                                              msg_fmt:img_tag({imgdata, "png", Image})
                                             ]});
                 {error, Error} ->
-                    ReplyBody = util:make_xml_bin(
+                    ReplyBody = util:tuple_to_xml(
                                   {msg, [], [{font, [{n, "Fixedsys"},
                                                      {s, 10}, {b, 0}, {i, 0}, {ul, 0}, {c, 16#0000CC},
                                                      {cs, 134}],
@@ -171,7 +171,7 @@ handle_event({text_msg_notify, TextMessage, From, Type, ReplyTo}, State) ->
             {ok, State};
         "!reboot " ++ Text ->
             Reply = "reboot " ++ binary_to_list(unicode:characters_to_binary(Text)) ++ " ...... ok!",
-            ReplyBody = util:make_xml_bin(
+            ReplyBody = util:tuple_to_xml(
                           {msg, [], [{font, [{n, "Fixedsys"},
                                              {s, 10}, {b, 0}, {i, 0}, {ul, 0}, {c, 16#0000CC},
                                              {cs, 134}],

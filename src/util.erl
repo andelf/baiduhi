@@ -12,7 +12,7 @@
 -export([timestamp/0, timestamp/1, pkcs1_to_rsa_pubkey/1, pkcs1_to_rsa_prvkey/1]).
 -export([rsa_public_decrypt/2, rsa_public_encrypt/2, rsa_private_decrypt/2,
         aes_encrypt/2, aes_decrypt/2]).
--export([make_xml_bin/1]).
+-export([tuple_to_xml/1, xml_to_tuple/1]).
 -export([escape_uri/1]).
 -export([to_hex_string/1, to_list/1]).
 
@@ -38,9 +38,13 @@ pkcs1_to_rsa_prvkey(PrvPkcs1) ->
     {ok, {'RSAPrivateKey', _, N, E, D, _, _, _, _, _, _}} = asn1ct:decode('PKCS-1', 'RSAPrivateKey', PrvPkcs1),
     [crypto:mpint(E), crypto:mpint(N), crypto:mpint(D)].
 
-make_xml_bin(Data) ->
+tuple_to_xml(Data) ->
     Doc = xmerl:export_simple_content([Data], xmerl_xml),
     binary:list_to_bin(Doc).
+
+xml_to_tuple(Xml) ->
+    {Doc, _} = xmerl_scan:string(Xml),
+    xmerl:export([Doc], xmerl_impacket).
 
 %% crypto
 rsa_public_decrypt(Data, Key) ->
