@@ -116,8 +116,6 @@ def searchMonitorItems(node_id, query):
     return noahUrlopen(url, dict(token=query,
                                  node_id=node_id), retPath=[])
 
-
-
 # Inherit custom protocol from erlport.Protocol
 class NoahProtocol(Protocol):
 
@@ -133,6 +131,11 @@ class NoahProtocol(Protocol):
                 return (item['item_name'],
                         int(item['item_id']))
         return None
+
+    def handle_search_nodes(self, query):
+        query = String(query)
+        resp = searchNodes(query)
+        return resp or None
 
     def handle_lookup_node(self, path):
         path = String(path)
@@ -169,6 +172,7 @@ if __name__ == "__main__":
     #print getChildrenNodes(1)
     #print searchNodes("BAIDU_VS_VSFL_VIDEO_FRONTLEVEL_SE_bs_db")
     # print proto.handle_lookup_node(u"BAIDU_VS_VSFL_VIDEO")
+    # print proto.handle_search_nodes(u"appac")
     # print proto.handle_lookup_node(u"BAIDU_VS_VSFL_VIDEO_FRONTLEVEL_SE_bs_db")
     # print proto.handle_lookup_node(u"BAIDU_VS_VSFL_VIDEO_FRONTLEVEL_SE_bs_db")
     #print proto.handle_lookup_node(u"BAIDU_VS_VSFL_VIDEO_FRONTLEVEL_SE_bs_db")

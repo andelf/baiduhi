@@ -91,7 +91,8 @@ handle_event({msg_notify, _Message, _From, _Type, _ReplyTo}, State) ->
 handle_event({text_msg_notify, Text, From, Type, ReplyTo}, State) ->
     ConvertType = fun(1) -> "SINGLE";
                      (2) -> "GROUP";
-                     (3) -> "MCHAT"
+                     (3) -> "MCHAT";
+                     (4) -> "TEMP"
                   end,
     error_logger:info_msg("~s text msg <from:~p> <replyto:~p>: ~ts", [ConvertType(Type), From, ReplyTo, Text]),
     {ok, State};

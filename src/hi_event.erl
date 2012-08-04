@@ -12,7 +12,7 @@
 -export([start_link/0, add_handler/2, delete_handler/2]).
 
 -export([user_login_ready/0, contact_notify/2, text_msg_notify/4, msg_notify/4, friend_add_notify/2,
-        blink/1, typing/1, code_upgraded/0]).
+        blink/1, typing/1, code_upgraded/0, friend_change/0]).
 -export([xxxx/1]).
 
 -define(SERVER, ?MODULE).
@@ -50,6 +50,9 @@ text_msg_notify(Text, From, Type, ReplyTo) ->
 
 friend_add_notify(Imid, RequestNote) ->
     gen_event:notify(?SERVER, {friend_add_notify, Imid, RequestNote}).
+
+friend_change() ->
+    gen_event:notify(?SERVER, {friend_change, "Something"}).
 
 %% cm event name
 blink(Imid) ->

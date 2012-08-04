@@ -30,6 +30,8 @@ stop() ->
     application:stop(baiduhi).
 
 
+%% @spec (atom(), whatever) -> ok
+%%                             {error, Code}
 set_info(What, Value) ->
     set_info([{What, util:to_list(Value)}]).
 set_info(Infos) ->
@@ -54,6 +56,10 @@ send_group_message(To, Message) ->
 send_mchat_message(To, Message) ->
     %% group message
     send_message(3, To, Message).
+
+%% need no verify headers.... fck
+send_temp_message(To, Message) ->
+    send_message(4, To, Message).
 
 %% contacts
 query_contact(Imid) ->
@@ -384,22 +390,32 @@ debug_online(P) ->
 %%% Internal functions
 %%%===================================================================
 send_message(Type, To, Message) ->
-    ReplyBody = util:tuple_to_xml(
-                  {msg, [], [{font, [{n, "Fixedsys"},
-                                     {s, 10}, {b, 0}, {i, 0}, {ul, 0}, {c, 16#0000CC},
-                                     {cs, 134}],
-                              []},
-                             {text, [{c, util:to_list(Message)}], []}
-                            ]}),
-    hi_client:sendpkt_async(protocol_helper:'msg#msg_request'(Type, To, ReplyBody)),
-    receive
-        {ack, IMPacket} ->
-            {ok, IMPacket}
-    end.
+    MessageBody = util:tuple_to_xml(
+                    {msg, [], [{font, [{n, "Fixedsys"},
+                                       {s, 10}, {b, 0}, {i, 0}, {ul, 0}, {c, 16#0000CC},
+                                       {cs, 134}],
+                                []},
+                               {text, [{c, util:to_list(Message)}], []}
+                              ]}),
+    send_raw_message(Type, To, MessageBody).
 
+
+send_raw_message(4, To, MessageBody) ->
+    VerifyHeaders = [],
+    hi_client:sendpkt_async(protocol_helper:'msg#tmsg_request'(VerifyHeaders, To, MessageBody)),
+    receive
+        {ack, {{msg, _, ack, _}, [{method, "tmsg_request"}, {code, Code}|_], _Xml}} ->
+            case Code of
+                200 -> ok;
+                Other -> {error, Other}
+            end
+    end;
 send_raw_message(Type, To, MessageBody) ->
     hi_client:sendpkt_async(protocol_helper:'msg#msg_request'(Type, To, MessageBody)),
     receive
-        {ack, IMPacket} ->
-            {ok, IMPacket}
+        {ack, {{msg, _, ack, _}, [{method, "msg_request"}, {code, Code}|_], _Xml}} ->
+            case Code of
+                200 -> ok;
+                Other -> {error, Other}
+            end
     end.

@@ -27,6 +27,5 @@ init([]) ->
     %% first start receiver, heartbeat, then client
     Children = [?CHILD(chart_api, worker),
                 ?CHILD(hi_event, worker),
-                ?CHILD(noah, worker),
                 ?CHILD(hi_sup, supervisor)],
         {ok, { {one_for_one, 1, 10}, Children} }.

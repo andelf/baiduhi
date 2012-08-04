@@ -18,13 +18,13 @@
 
 
 'login#login'({V_Url, V_Time, V_Period, V_Code}, DynamicPassword) ->
-    AddtionHeaders = [{v_url, V_Url},
+    VerifyHeaders = [{v_url, V_Url},
                       {v_time, V_Time},
                       {v_period, V_Period},
                       {v_code, V_Code}],
-    'login#login'(AddtionHeaders, DynamicPassword);
-'login#login'(AddtionHeaders, DynamicPassword) ->
-    Params = [{method, "login"}|AddtionHeaders],
+    'login#login'(VerifyHeaders, DynamicPassword);
+'login#login'(VerifyHeaders, DynamicPassword) ->
+    Params = [{method, "login"}|VerifyHeaders],
     Timestamp = util:to_list(util:timestamp()),
     Body = util:tuple_to_xml(
              {login, [], [{user, [{account, hi_state:get(username)},
@@ -60,7 +60,7 @@
     'security#verify'(8, []);
 'security#verify'(quit_group) ->
     'security#verify'(9, []).
-'security#verify'(tmp_session, Imid) ->
+'security#verify'(temp_chat, Imid) ->
     'security#verify'(11, [{uid2, Imid}]);
 'security#verify'(add_friend, Imid) ->
     'security#verify'(2, [{friend, Imid}]);
@@ -68,7 +68,8 @@
     'security#verify'(3, [{friend, Imid}]);
 'security#verify'(Type, AdditonalHeader) ->
     {{security, "1.0", request, hi_state:seq()},
-     [{method, "verify"}, {uid, hi_state:uid()}, {type, Type}, {lid, hi_state:get(username)}|AdditonalHeader],
+     [{method, "verify"}, {uid, hi_state:uid()}, {type, Type},
+      {lid, hi_state:get(username)}|AdditonalHeader],
      ""}.
 
 %% friend
@@ -346,6 +347,24 @@
       {type, Type}, {uid, hi_state:uid()}, {from, hi_state:uid()}, {to, To},
       {ack, MsgId}],
      ""}.
+
+'msg#tmsg_request'({V_Url, V_Time, V_Period, V_Code}, To, Message) ->
+    VerifyHeaders = [{v_url, V_Url},
+                      {v_time, V_Time},
+                      {v_period, V_Period},
+                      {v_code, V_Code}],
+    'msg#tmsg_request'(VerifyHeaders, To, Message);
+'msg#tmsg_request'(VerifyHeaders, To, Message) ->
+    {{msg, "1.1", request, hi_state:seq()},
+     [{method, "tmsg_request"},
+      {uid, hi_state:uid()},
+      {from, hi_state:uid()},
+      {type, 4},
+      {to, To},
+      {time, util:timestamp()},
+      {basemsgid, hi_state:seq(no_increase)},
+      {msgid, 0}, {subid, 0}, {nextsubid, 0}|VerifyHeaders],
+     Message}.
 
 %% cm 通用消息相关命令
 'cm#blk'(To) ->

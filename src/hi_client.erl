@@ -228,13 +228,34 @@ handle_info({impacket, {{msg, _, notify, _}, [{method,"msg_notify"}|Params], Xml
     hi_event:msg_notify(IncomeMessage, From, Type, ReplyTo),
     {noreply, State};
 
+%% 临时会话
+handle_info({impacket, {{msg,_,request,_}, [{method,"tmsg_request"}|Params], Xml}}, State) ->
+    {from, From} = lists:keyfind(from, 1, Params),
+    %% {type, Type} = lists:keyfind(type, 1, Params), %type=2 group, type=3 multi, type=4 temp
+    Type = 4,
+    %% {to, To} = lists:keyfind(to, 1, Params),
+    {v_url, V_Url} = lists:keyfind(v_url, 1, Params),
+    {v_time, V_Time} = lists:keyfind(v_time, 1, Params),
+    {v_period, V_Period} = lists:keyfind(v_period, 1, Params),
+    {v_code, V_Code} = lists:keyfind(v_code, 1, Params),
+    IncomeTextMessage = msg_fmt:msg_to_list(Xml),
+    [IncomeMessage] = util:xml_to_tuple(Xml),
+    ReplyTo = From,
+    hi_event:text_msg_notify(IncomeTextMessage, From, Type, ReplyTo),
+    hi_event:msg_notify(IncomeMessage, From, Type, ReplyTo),
+    %% 临时会话不ack
+    {noreply, State};
+
 %%--------------------------------------------------------------------
 %% message that no need to ack
-handle_info({impacket, {{contact, _, notify, _}, [{method, "notify"}|_Params], Xml}},
-            State) ->
+handle_info({impacket, {{contact, _, notify, _}, [{method, "notify"}|_Params], Xml}}, State) ->
     [{contact, [{imid, Imid}|Params], []}] = util:xml_to_tuple(Xml),
     hi_event:contact_notify(Imid, Params),
     {noreply, State};
+
+handle_info({impacket, {{friend,_,notify,_},  [{method,"friend_change"}|_Params], _}}, State) ->
+    hi_event:friend_change(),
+    {notify, State};
 
 handle_info({impacket, {{msg, _, notify, _}, [{method, "msg_ack_notify"}|_], _}}, State) ->
     {noreply, State};

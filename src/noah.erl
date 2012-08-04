@@ -4,26 +4,22 @@
 %%% @doc
 %%%
 %%% @end
-%%% Created : 29 Jul 2012 by Feather.et.ELF <fledna@qq.com>
+%%% Created :  4 Aug 2012 by Feather.et.ELF <fledna@qq.com>
 %%%-------------------------------------------------------------------
 -module(noah).
 
 -behaviour(gen_server).
 
 %% API
--export([start_link/0,
-         lookup_monitor_item/2,
-         lookup_node/1,
-         exit/0
-        ]).
+-export([start_link/0]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
 -define(SERVER, ?MODULE).
--define(TIMEOUT, 400000).
--record(state, {port}).
+
+-record(state, {}).
 
 %%%===================================================================
 %%% API
@@ -39,14 +35,6 @@
 start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
-lookup_monitor_item(NodeId, MonitorItemName) ->
-    gen_server:call(?SERVER, {lookup_monitor_item, NodeId, MonitorItemName}).
-
-lookup_node(Path) ->
-    gen_server:call(?SERVER, {lookup_node, Path}).
-
-exit() ->
-    gen_server:cast(?SERVER, {exit, normal}).
 %%%===================================================================
 %%% gen_server callbacks
 %%%===================================================================
@@ -79,23 +67,8 @@ init([]) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-%handle_call({lookup_monitor_item, NodeId, MonitorItemName}, _From, #state{port=Port} = State) ->
-handle_call(CommandTuple, _From, #state{port=Port} = State) ->
-    ReqData = term_to_binary(CommandTuple),
-    port_command(Port, ReqData),
-    io:format("calling~n"),
-    Reply = receive
-                {Port, {data, RespData}} ->
-                    case binary_to_term(RespData) of
-                        'none' ->
-                            {error, no_result};
-                        Ret ->
-                            {ok, Ret}
-                    end
-            after
-                ?TIMEOUT ->
-                    {error, timeout}
-            end,
+handle_call(_Request, _From, State) ->
+    Reply = ok,
     {reply, Reply, State}.
 
 %%--------------------------------------------------------------------
@@ -108,10 +81,8 @@ handle_call(CommandTuple, _From, #state{port=Port} = State) ->
 %%                                  {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_cast(CommandTuple, #state{port=Port} = State) ->
-    ReqData = term_to_binary(CommandTuple),
-    port_command(Port, ReqData),
-    {stop, "cast will cause stop", State}.
+handle_cast(_Msg, State) ->
+    {noreply, State}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -124,10 +95,12 @@ handle_cast(CommandTuple, #state{port=Port} = State) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_info(timeout, State) ->
-    NoahPortPy = filename:join(code:priv_dir(baiduhi), "noah_port.py"),
-    Port = open_port({spawn, "python -u " ++ NoahPortPy},
-                     [{packet, 1}, binary, use_stdio]),
-    {noreply, State#state{port=Port}};
+    inets:start(),
+    inets:start(httpc, [{profile, ?MODULE}]),
+    httpc:set_options([{cookies, enabled}], ?MODULE),
+    httpc:request("http://noah.baidu.com/", simsimi),
+    {noreply, State};
+
 handle_info(_Info, State) ->
     {noreply, State}.
 
