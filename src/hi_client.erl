@@ -234,10 +234,10 @@ handle_info({impacket, {{msg,_,request,_}, [{method,"tmsg_request"}|Params], Xml
     %% {type, Type} = lists:keyfind(type, 1, Params), %type=2 group, type=3 multi, type=4 temp
     Type = 4,
     %% {to, To} = lists:keyfind(to, 1, Params),
-    {v_url, V_Url} = lists:keyfind(v_url, 1, Params),
-    {v_time, V_Time} = lists:keyfind(v_time, 1, Params),
-    {v_period, V_Period} = lists:keyfind(v_period, 1, Params),
-    {v_code, V_Code} = lists:keyfind(v_code, 1, Params),
+    %% {v_url, V_Url} = lists:keyfind(v_url, 1, Params),
+    %% {v_time, V_Time} = lists:keyfind(v_time, 1, Params),
+    %% {v_period, V_Period} = lists:keyfind(v_period, 1, Params),
+    %% {v_code, V_Code} = lists:keyfind(v_code, 1, Params),
     IncomeTextMessage = msg_fmt:msg_to_list(Xml),
     [IncomeMessage] = util:xml_to_tuple(Xml),
     ReplyTo = From,
@@ -248,9 +248,25 @@ handle_info({impacket, {{msg,_,request,_}, [{method,"tmsg_request"}|Params], Xml
 
 %%--------------------------------------------------------------------
 %% message that no need to ack
+handle_info({impacket,{{group,_,notify,_}, [{method,"add_member_notify"}|_Params], Xml}}, State) ->
+    [{add_member_notify, [{gid, Gid},{manager,Manager}|_], ImidTokens}] = util:xml_to_tuple(Xml),
+    Imids = lists:map(fun({member,[{imid,Imid}],_}) -> list_to_integer(Imid) end, ImidTokens),
+    hi_event:group_add_member_notify(list_to_integer(Gid), list_to_integer(Manager), Imids),
+    {noreply, State};
+
+handle_info({impacket,{{group,_,notify,_}, [{method,"delete_member_notify"}|_Params], Xml}}, State) ->
+    [{delete_member_notify, [{gid, Gid},{manager,Manager}|_], ImidTokens}] = util:xml_to_tuple(Xml),
+    Imids = lists:map(fun({member,[{imid,Imid}],_}) -> list_to_integer(Imid) end, ImidTokens),
+    hi_event:group_delete_member_notify(list_to_integer(Gid), list_to_integer(Manager), Imids),
+    {noreply, State};
+
 handle_info({impacket, {{contact, _, notify, _}, [{method, "notify"}|_Params], Xml}}, State) ->
     [{contact, [{imid, Imid}|Params], []}] = util:xml_to_tuple(Xml),
     hi_event:contact_notify(Imid, Params),
+    {noreply, State};
+
+handle_info({impacket, {{contact, _, notify, _}, [{method, "active_notify"}|_Params], Xml}}, State) ->
+    %% TODO: handle it
     {noreply, State};
 
 handle_info({impacket, {{friend,_,notify,_},  [{method,"friend_change"}|_Params], _}}, State) ->

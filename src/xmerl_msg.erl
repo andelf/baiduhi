@@ -16,7 +16,7 @@
          '#element#'/5,
          '#text#'/1]).
 -export([msg/4, font/4, text/4, url/4, face/4, cface/4,
-        img/4, reply/4, thumb/4]).
+        img/4, reply/4, thumb/4, imagedata/4]).
 
 -include_lib("xmerl/include/xmerl.hrl").
 
@@ -101,6 +101,9 @@ reply(Data, Attrs, _Parents, _E) ->
     [Data, Name].
 
 thumb(Data, _Attrs, _Parents, _E) ->
+    Data.
+
+imagedata(Data, _Attrs, _Parents, _E) ->
     Data.
 
 %%%===================================================================

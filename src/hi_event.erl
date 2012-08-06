@@ -11,9 +11,15 @@
 %% API
 -export([start_link/0, add_handler/2, delete_handler/2]).
 
--export([user_login_ready/0, contact_notify/2, text_msg_notify/4, msg_notify/4, friend_add_notify/2,
-        blink/1, typing/1, code_upgraded/0, friend_change/0]).
--export([xxxx/1]).
+-export([user_login_ready/0, contact_notify/2, text_msg_notify/4, msg_notify/4]).
+%% friend
+-export([friend_add_notify/2, friend_change/0]).
+%% group
+-export([group_add_member_notify/3, group_delete_member_notify/3]).
+%% cm
+-export([blink/1, typing/1]).
+%% custum
+-export([code_upgraded/0]).
 
 -define(SERVER, ?MODULE).
 
@@ -31,8 +37,6 @@ delete_handler(Handler, Args) ->
     gen_event:delete_handler(?SERVER, Handler, Args).
 
 %% API functions
-xxxx(What) ->
-    gen_event:notify(?SERVER, {xxx, What}).
 
 %% 约定, 一般消息名为 Command_Method
 user_login_ready() ->
@@ -54,6 +58,11 @@ friend_add_notify(Imid, RequestNote) ->
 friend_change() ->
     gen_event:notify(?SERVER, {friend_change, "Something"}).
 
+%% group
+group_add_member_notify(Gid, Manager, Imids) ->
+    gen_event:notify(?SERVER, {group_add_member_notify, Gid, Manager, Imids}).
+group_delete_member_notify(Gid, Manager, Imids) ->
+    gen_event:notify(?SERVER, {group_delete_member_notify, Gid, Manager, Imids}).
 %% cm event name
 blink(Imid) ->
     gen_event:notify(?SERVER, {blink, Imid}).

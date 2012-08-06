@@ -54,11 +54,11 @@ send_group_message(To, Message) ->
     send_message(2, To, Message).
 
 send_mchat_message(To, Message) ->
-    %% group message
+    %% multi chat message
     send_message(3, To, Message).
 
-%% need no verify headers.... fck
 send_temp_message(To, Message) ->
+    %% temp message
     send_message(4, To, Message).
 
 %% contacts
@@ -401,7 +401,7 @@ send_message(Type, To, Message) ->
 
 
 send_raw_message(4, To, MessageBody) ->
-    VerifyHeaders = [],
+    VerifyHeaders = [],                         % fuck, baiduhi doesn't use this field
     hi_client:sendpkt_async(protocol_helper:'msg#tmsg_request'(VerifyHeaders, To, MessageBody)),
     receive
         {ack, {{msg, _, ack, _}, [{method, "tmsg_request"}, {code, Code}|_], _Xml}} ->

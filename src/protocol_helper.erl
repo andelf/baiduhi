@@ -439,8 +439,12 @@
                   end, ImidList)})}.
 
 %% 申请图片表情服务器的地址（TCP）
+%% CHAT_TYPE_DOWN = 999    //图片下载
 imagesvr() ->
-    {{imagesvr, "1.0", request, hi_state:seq()}, [{from, hi_state:uid()}], []}.
+    {{imagesvr, "1.0", request, hi_state:seq()},
+     [{from, hi_state:uid()},
+
+      {tgtype,999}], []}.
 
 %% [2,210,254,3,123,125,113,34,1,187]
 parse_imagesvr(Data) when is_list(Data) ->

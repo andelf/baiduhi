@@ -79,7 +79,7 @@ handle_event(user_login_ready, State) ->
                                                              hi_state:uid()]),
     {ok, State};
 handle_event({contact_notify, Imid, Params}, State) ->
-    error_logger:info_msg("contact:notify imid:~s ~180p", [Imid, Params]),
+    error_logger:info_msg("contact:notify <imid:~s> ~180p", [Imid, Params]),
     {ok, State};
 handle_event({msg_notify, _Message, _From, _Type, _ReplyTo}, State) ->
     %% ConvertType = fun(1) -> "SINGLE";
@@ -110,6 +110,14 @@ handle_event({typing, Imid}, State) ->
 
 handle_event(code_upgraded, State) ->
     error_logger:info_msg("code upgraded!", []),
+    {ok, State};
+
+handle_event({group_add_member_notify, Gid, Manager, Imids}, State) ->
+    error_logger:info_msg("~p being added to <gid:~p> by <imid:~p>", [Imids, Gid, Manager]),
+    {ok, State};
+
+handle_event({group_delete_member_notify, Gid, Manager, Imids}, State) ->
+    error_logger:info_msg("~p being deleted to <gid:~p> by <imid:~p>", [Imids, Gid, Manager]),
     {ok, State};
 
 handle_event(Event, State) ->
