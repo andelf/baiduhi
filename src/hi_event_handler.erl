@@ -169,6 +169,13 @@ handle_event({text_msg_notify, TextMessage, From, Type, ReplyTo}, State) ->
                     ok
             end,
             {ok, State};
+        "!whoami" ->
+            {ok, Info} = baiduhi:query_contact(From),
+            InfoText = lists:map(fun({Key, Value}) ->
+                                         io_lib:format("~p: ~s~n", [Key, util:to_list(Value)])
+                                 end, Info),
+            baiduhi:send_message(Type, ReplyTo, InfoText),
+            {ok, State};
         "!reboot " ++ Text ->
             Reply = "reboot " ++ binary_to_list(unicode:characters_to_binary(Text)) ++ " ...... ok!",
             ReplyBody = util:tuple_to_xml(
