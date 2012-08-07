@@ -208,15 +208,15 @@
                             {localeid, "2052"},
                             {imversion, "2,1,0,1"},
                             {pc_code, "BDIMXV2-O_1-C_9-D_3-M_4-V_5"}], []}]})}.
-        %% ,LocaleSimpleChinese = 2052 /**< 简体中文.*/
-        %% ,LocaleTraditionalChinese= 1028 /**< 繁体中文.*/
-        %% ,LocaleUsEnglish = 1033 /**< 美国英语.*/
-        %% ,LocaleJapanese = 1041 /**< 日文 >*/
+        %%  2052 /**< 简体中文.*/
+        %%  1028 /**< 繁体中文.*/
+        %%  1033 /**< 美国英语.*/
+        %%  1041 /**< 日文 >*/
 
 
 %% contact
 %% contact:query
-%% Fields imid;baiduid; status; personal_comment ; nickname ; head ;
+%% Fields imid; baiduid; status; personal_comment ; nickname ; head ;
 %% camera; friendly_level ; name ; homepage ; birthday ; personal_desc ;
 %% info_open_level ; email ; email_fixed ; music ; cli_type ; cli_ver;
 %% psp_status; vitality;
