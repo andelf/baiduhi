@@ -386,6 +386,16 @@ debug_online(P) ->
             end
     end.
 
+is_baiduer(Baiduid) ->
+    {ok, Imid} = baiduhi:find_friend(Baiduid),
+    {ok, Info} = baiduhi:query_contact(Imid, [baiduer_info]),
+    case lists:keyfind(baiduer_info, 1, Info) of
+        {baiduer_info, "131"} ->
+            true;
+        _Other ->
+            false
+    end.
+
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
