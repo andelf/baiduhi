@@ -386,6 +386,7 @@ debug_online(P) ->
             end
     end.
 
+%% only useable for baiduer. fuck.
 is_baiduer(baiduid, Baiduid) ->
     {ok, Imid} = baiduhi:find_friend(Baiduid),
     is_baiduer(imid, Imid);
