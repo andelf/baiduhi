@@ -246,33 +246,23 @@ handle_text_message(TextMessage, From, Type, ReplyTo) ->
                     ok
             end;
         "!whoami" ->
-            case baiduhi:is_baiduer(imid, From) of
-                true ->
-                    {ok, Info} = baiduhi:query_contact(
-                                   From,
-                                   [imid, baiduid, status, personal_comment, nickname, birthday, personal_desc,
-                                    name, email, music, cli_type, friendly_level, vitality, baiduer_info]),
-                    InfoText = lists:map(fun({Key, Value}) ->
-                                                 io_lib:format("~p: ~ts~n", [Key, Value])
-                                         end, Info),
-                    baiduhi:send_message(Type, ReplyTo, InfoText);
-                _Other ->
-                    baiduhi:send_message(Type, ReplyTo, "对不起, 非百度员工")
-            end;
+            {ok, Info} = baiduhi:query_contact(
+                           From,
+                           [imid, baiduid, status, personal_comment, nickname, birthday, personal_desc,
+                            name, email, music, cli_type, friendly_level, vitality, baiduer_info]),
+            InfoText = lists:map(fun({Key, Value}) ->
+                                         io_lib:format("~p: ~ts~n", [Key, Value])
+                                 end, Info),
+            baiduhi:send_message(Type, ReplyTo, InfoText);
         "!whois " ++ Who ->
-            case baiduhi:is_baiduer(imid, From) of
-                true ->
-                    {ok, Imid} = baiduhi:find_friend(Who),
-                    {ok, Info} = baiduhi:query_contact(Imid,
-                                   [imid, baiduid, status, personal_comment, nickname, birthday, personal_desc,
+            {ok, Imid} = baiduhi:find_friend(Who),
+            {ok, Info} = baiduhi:query_contact(Imid,
+                                               [imid, baiduid, status, personal_comment, nickname, birthday, personal_desc,
                                     name, email, music, cli_type, friendly_level, vitality, baiduer_info]),
-                    InfoText = lists:map(fun({Key, Value}) ->
-                                                 io_lib:format("~p: ~ts~n", [Key, Value])
-                                         end, Info),
-                    baiduhi:send_message(Type, ReplyTo, InfoText);
-                _Other ->
-                    baiduhi:send_message(Type, ReplyTo, "对不起, 非百度员工")
-            end;
+            InfoText = lists:map(fun({Key, Value}) ->
+                                         io_lib:format("~p: ~ts~n", [Key, Value])
+                                 end, Info),
+            baiduhi:send_message(Type, ReplyTo, InfoText);
         "!reboot " ++ Text ->
             Reply = "reboot " ++ binary_to_list(unicode:characters_to_binary(Text)) ++ " ...... ok!",
             ReplyBody = util:tuple_to_xml(

@@ -438,6 +438,19 @@
                           {member, [{imid, Imid}], []}
                   end, ImidList)})}.
 
+
+%% wealth
+'wealth#query_game'(Imid, Level) ->
+    {{wealth, "1.5", request, hi_state:seq()},
+     [{method, "query_game"},
+      {uid, hi_state:uid()}],
+     util:tuple_to_xml(
+       {game, [{name, "rob_wealth"},
+               {uid, util:to_list(Imid)},
+               {level, util:to_list(Level)}], []})}.
+
+
+
 %% 申请图片表情服务器的地址（TCP）
 %% CHAT_TYPE_DOWN = 999    //图片下载
 imagesvr() ->
