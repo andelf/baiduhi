@@ -277,8 +277,5 @@ handle_text_message(TextMessage, From, Type, ReplyTo) ->
             baiduhi:send_message(Type, ReplyTo, "同学您好，我是淘宝网店的客服。你寄回的充气娃娃我们已经帮你修好，马上给你寄回去。"
                                  "但请你别那么残暴的对待她，她毕竟只是个娃娃。充气娃娃寄回来时，所有在场的工作人员都落泪了~");
         _Other ->
-            %% for joking
-            %% baiduhi:send_message(Type, ReplyTo, "同学您好，我是淘宝网店的客服。你寄回的充气娃娃我们已经帮你修好，马上给你寄回去。"
-            %% "但请你别那么残暴的对待她，她毕竟只是个娃娃。充气娃娃寄回来时，所有在场的工作人员都落泪了~"),
             ok
     end.

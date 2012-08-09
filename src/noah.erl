@@ -95,10 +95,9 @@ handle_cast(_Msg, State) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_info(timeout, State) ->
-    inets:start(),
     inets:start(httpc, [{profile, ?MODULE}]),
     httpc:set_options([{cookies, enabled}], ?MODULE),
-    httpc:request("http://noah.baidu.com/", simsimi),
+    httpc:request("http://noah.baidu.com/", ?MODULE),
     {noreply, State};
 
 handle_info(_Info, State) ->
