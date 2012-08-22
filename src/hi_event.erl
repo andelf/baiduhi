@@ -15,7 +15,7 @@
 %% friend
 -export([friend_add_notify/2, friend_change/0]).
 %% group
--export([group_add_member_notify/3, group_delete_member_notify/3]).
+-export([group_add_member_notify/3, group_delete_member_notify/3, group_card_change_notify/3]).
 %% cm
 -export([blink/1, typing/1]).
 %% custum
@@ -63,6 +63,9 @@ group_add_member_notify(Gid, Manager, Imids) ->
     gen_event:notify(?SERVER, {group_add_member_notify, Gid, Manager, Imids}).
 group_delete_member_notify(Gid, Manager, Imids) ->
     gen_event:notify(?SERVER, {group_delete_member_notify, Gid, Manager, Imids}).
+group_card_change_notify(Gid, Imid, Info) ->
+    gen_event:notify(?SERVER, {group_card_change_notify, Gid, Imid, Info}).
+
 %% cm event name
 blink(Imid) ->
     gen_event:notify(?SERVER, {blink, Imid}).

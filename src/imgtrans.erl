@@ -24,7 +24,7 @@
 get_server_info() ->
     hi_client:sendpkt_async(protocol_helper:imagesvr()),
     receive
-        {ack, {{imagesvr, _, ack, _}, [{code, Code}|_], ServerInfo}} ->
+        {ack, {{imagesvr, _, ack, _}, [{code, _Code}|_], ServerInfo}} ->
             {Token, IP, Port} = protocol_helper:parse_imagesvr(ServerInfo),
             {Token, IP, Port}
     end.

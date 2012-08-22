@@ -42,8 +42,8 @@
 %% @end
 %%--------------------------------------------------------------------
 start_link() ->
-    Filename = filename:join(code:priv_dir(baiduhi), "baiduhi.conf"),
-    case file:consult(Filename) of
+    ConfFile = filename:join(code:priv_dir(baiduhi), "baiduhi.conf"),
+    case file:consult(ConfFile) of
         {ok, [{baiduhi, Conf}]} ->
             {username, Username} = lists:keyfind(username, 1, Conf),
             {password, Password} = lists:keyfind(password, 1, Conf),
@@ -260,12 +260,19 @@ handle_info({impacket,{{group,_,notify,_}, [{method,"delete_member_notify"}|_Par
     hi_event:group_delete_member_notify(list_to_integer(Gid), list_to_integer(Manager), Imids),
     {noreply, State};
 
+handle_info({impacket,{{group,_,notify,_}, [{method,"card_change_notify"}|Params], Xml}}, State) ->
+    {imid, Imid} = lists:keyfind(Params, 1, imid),
+    {gid, Gid} = lists:keyfind(Params, 1, gid),
+    [{card, Info, []}] = util:xml_to_tuple(Xml),
+    hi_event:group_card_change_notify(Gid, Imid, Info),
+    {noreply, State};
+
 handle_info({impacket, {{contact, _, notify, _}, [{method, "notify"}|_Params], Xml}}, State) ->
     [{contact, [{imid, Imid}|Params], []}] = util:xml_to_tuple(Xml),
     hi_event:contact_notify(Imid, Params),
     {noreply, State};
 
-handle_info({impacket, {{contact, _, notify, _}, [{method, "active_notify"}|_Params], Xml}}, State) ->
+handle_info({impacket, {{contact, _, notify, _}, [{method, "active_notify"}|_Params], _Xml}}, State) ->
     %% TODO: handle it
     {noreply, State};
 

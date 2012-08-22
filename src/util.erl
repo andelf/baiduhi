@@ -13,8 +13,8 @@
 -export([rsa_public_decrypt/2, rsa_public_encrypt/2, rsa_private_decrypt/2,
         aes_encrypt/2, aes_decrypt/2]).
 -export([tuple_to_xml/1, xml_to_tuple/1]).
--export([escape_uri/1]).
--export([to_hex_string/1, to_list/1]).
+-export([escape_uri/1, url_encode/1]).
+-export([to_hex_string/1, to_list/1, to_integer/1]).
 
 
 
@@ -88,8 +88,25 @@ aes_decrypt(<<Chipher:16/binary, Tail/binary>>, Key, Acc) ->
     aes_decrypt(Tail, Key, <<Acc/binary, Plain/binary>>);
 aes_decrypt(<<>>, _, Acc) -> Acc.
 
+
+url_encode(Data) ->
+    url_encode(Data,"").
+
+url_encode([],Acc) ->
+    Acc;
+
+url_encode([{Key,Value}|R],"") ->
+    url_encode(R, escape_uri(Key) ++ "=" ++ escape_uri(Value));
+url_encode([{Key,Value}|R],Acc) ->
+    url_encode(R, Acc ++ "&" ++ escape_uri(Key) ++ "=" ++ escape_uri(Value)).
+
+
 escape_uri(S) when is_list(S) ->
     escape_uri(unicode:characters_to_binary(S));
+escape_uri(S) when is_atom(S) ->
+    escape_uri(atom_to_list(S));
+escape_uri(S) when is_integer(S) ->
+    escape_uri(integer_to_list(S));
 escape_uri(<<C:8, Cs/binary>>) when C >= $a, C =< $z ->
     [C] ++ escape_uri(Cs);
 escape_uri(<<C:8, Cs/binary>>) when C >= $A, C =< $Z ->
@@ -123,8 +140,13 @@ to_hex_string(Data) when is_binary(Data)->
     OctMap = "0123456789abcdef",
     lists:flatten([lists:nth(1+N, OctMap) || <<N:4>> <= Data]).
 
+
 to_list(Atom) when is_atom(Atom) ->
     atom_to_list(Atom);
+to_list(<<>>) ->
+    0;
+to_list(Binary) when is_binary(Binary) ->
+    binary_to_list(Binary);
 to_list(List) when is_list(List) ->
     %% FIXME: handle ordernary list
     case lists:all(fun(C) -> C < 256 end, List) of
@@ -135,6 +157,17 @@ to_list(List) when is_list(List) ->
     end;
 to_list(Integer) when is_integer(Integer) ->
     integer_to_list(Integer).
+
+to_integer(List) when is_list(List) ->
+    list_to_integer(List);
+to_integer(Integer) when is_integer(Integer) ->
+    Integer;
+to_integer(<<>>) ->
+    0;
+to_integer(Binary) when is_binary(Binary) ->
+    list_to_integer(binary_to_list(Binary)).
+
+
 
 
 %%%===================================================================
