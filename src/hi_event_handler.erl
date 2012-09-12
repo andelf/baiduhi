@@ -276,6 +276,31 @@ handle_text_message(TextMessage, From, Type, ReplyTo) ->
         "!ping" ->
             baiduhi:send_message(Type, ReplyTo, "同学您好，我是淘宝网店的客服。你寄回的充气娃娃我们已经帮你修好，马上给你寄回去。"
                                  "但请你别那么残暴的对待她，她毕竟只是个娃娃。充气娃娃寄回来时，所有在场的工作人员都落泪了~");
+        "!family " ++ Term ->
+            Baiduers = try
+                           family:search_baiduer(Term)
+                       catch
+                           _SomeHow ->
+                               io:format("error ~p~n", [_SomeHow]),
+                               []
+                       end,
+            case Baiduers of
+                [] ->
+                    baiduhi:send_message(Type, ReplyTo, [26681,25454,30456,20851,27861,24459,27861,35268,21644,
+                                                         25919,31574,65292,37096,20998,25628,32034,32467,26524,26410,
+                                                         20104,26174,31034,12290]);
+                %% [26816,32034,32467,26524,20026,31354,46]);
+                _ ->
+                    lists:map(fun(Baiduer) ->
+                                      {baiduer, Username, Name, _DisplayName, Hi,
+                                       Email, Phone, Mobile, Department, Seat} = Baiduer,
+                                      baiduhi:send_message(
+                                        Type, ReplyTo,
+                                        io_lib:format(
+                                          "~s: ~ts[~ts]~nhi: ~ts~nemail: ~s~nphone: ~s~nmobile: ~s~nseat: ~ts",
+                                          [Username, Name, Department, Hi, Email, Phone, Mobile, Seat]))
+                              end, Baiduers)
+            end;
         _Other ->
             ok
     end.

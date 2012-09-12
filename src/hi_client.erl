@@ -49,7 +49,7 @@ start_link() ->
             {password, Password} = lists:keyfind(password, 1, Conf),
             start_link(Username, Password);
         Other ->
-            {error, Other}
+            {error, {conf_file_error, Other}}
     end.
 start_link(Username, Password) ->
     gen_server:start_link({local, ?SERVER}, ?MODULE,

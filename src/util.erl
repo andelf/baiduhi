@@ -91,10 +91,8 @@ aes_decrypt(<<>>, _, Acc) -> Acc.
 
 url_encode(Data) ->
     url_encode(Data,"").
-
 url_encode([],Acc) ->
     Acc;
-
 url_encode([{Key,Value}|R],"") ->
     url_encode(R, escape_uri(Key) ++ "=" ++ escape_uri(Value));
 url_encode([{Key,Value}|R],Acc) ->
