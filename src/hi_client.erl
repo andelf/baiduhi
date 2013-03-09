@@ -77,7 +77,7 @@ stop() ->
 init(Config) ->
     {username, Username} = lists:keyfind(username, 1, Config),
     %% logger:log(normal, "username=~s password=******", [Username]),
-    {ok, Sock} = gen_tcp:connect('123.125.113.37', 443, [{active, false}, binary]),
+    {ok, Sock} = gen_tcp:connect("119.75.214.21", 443, [{active, false}, binary]),
     {ok, #state{sock=Sock, username=Username, config=Config, stage=initial}, 0}.
 
 %%--------------------------------------------------------------------
