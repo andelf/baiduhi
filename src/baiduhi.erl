@@ -135,7 +135,7 @@ get_friends() ->
                 200 ->
                     {ok, FriendAttrs};
                 Other ->
-                    {to_be, Other, FriendAttrs}
+                    {error, Other, FriendAttrs}
             end
     end.
 
@@ -161,7 +161,7 @@ find_friend(Account) ->
                     {210, Params};
                 401 ->
                     {imid, Imid} = lists:keyfind(imid, 1, Params),
-                    {not_yet_activated, Imid};
+                    {not_activated, Imid};
                 402 ->
                     {error, "account not exists"}
             end

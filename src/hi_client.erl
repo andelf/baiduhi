@@ -190,7 +190,7 @@ handle_info({impacket, {{login, _, ack, _}, [{method,"login"},{code,200}|_], Xml
     [#xmlAttribute{value=StrUid}] = xmerl_xpath:string("//login/@imid", Doc),
     Uid = list_to_integer(StrUid),              % always use integer uid
     hi_state:uid(Uid),                        % set uid
-    hi_state:set(uid, Uid),
+    hi_state:set(imid, Uid),
     self() ! {sendpkt, protocol_helper:'user#login_ready'()},
     %% empty config state, for safty
     {noreply, State#state{stage=on_login_ready_response, config=[]}};
