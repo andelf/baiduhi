@@ -34,8 +34,8 @@ stop() ->
 %%                             {error, Code}
 set_info(What, Value) ->
     set_info([{What, util:to_list(Value)}]).
-set_info(Infos) ->
-    hi_client:sendpkt_async(protocol_helper:'user#set'(Infos)),
+set_info(Info) when is_list(Info) ->
+    hi_client:sendpkt_async(protocol_helper:'user#set'(Info)),
     receive
         {ack, {{user, _, ack, _}, [{method, "set"}, {code, Code}|_], _Xml}} ->
             case Code of
@@ -45,6 +45,38 @@ set_info(Infos) ->
                     {error, Other}
             end
     end.
+
+
+get_info() ->
+    get_info(all).
+
+get_info(all) ->
+    get_info([baiduid, birthday, email, frequency_sort, friendly_level,
+              head, info_open_level, key, name, nickname, personal_comment,
+              personal_desc, phone, psp_msg_count, sex, tmsg_policy, visible,
+              vitality, wealth, sns_visible]);
+get_info(Field) when is_atom(Field) ->
+    case get_info([Field]) of
+        {ok, Prop} ->
+            {ok, proplists:get_value(Field, Prop)};
+        Other ->
+            Other
+    end;
+get_info(Fields) when is_list(Fields) ->
+    hi_client:sendpkt_async(protocol_helper:'user#query'(
+                              lists:map(fun atom_to_list/1,
+                                        Fields))),
+    receive
+        {ack, {_, [{method, "query"}, {code, Code}|_], Xml}} ->
+            case Code of
+                200 ->
+                    [{user, _, [{account, Params, _}]}] = util:xml_to_tuple(Xml),
+                    {ok, Params};
+                ErrCode ->
+                    {error, ErrCode}
+            end
+    end.
+
 
 send_single_message(To, Message) ->
     send_message(1, To, Message).
@@ -413,6 +445,12 @@ imid_to_baiduhi(Imid) ->
         Baiduid ->
             {ok, Baiduid}
     end.
+
+baiduid() ->
+    hi_state:get(username).
+
+imid() ->
+    hi_state:get(imid).
 
 
 %%%===================================================================
