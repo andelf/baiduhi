@@ -149,7 +149,8 @@ handle_info({stage2, {_ConMethod, RootKeyNo, _RootKeyLen, S2Data}},
     S2Key = util:pkcs1_to_rsa_pubkey(util:rsa_public_decrypt(S2Data, S1Key)),
     %% 用S2Key加密S3 pub key
     S3Data = protocol:make_stage_data(
-               stage3, util:rsa_public_encrypt(binary:list_to_bin(?HiPubKey), S2Key)),
+               stage3,
+               util:rsa_public_encrypt(binary:list_to_bin(?HiPubKey), S2Key)),
     gen_tcp:send(Sock, protocol:make_packet(stage, ?CT_FLAG_CON_S3, S3Data)),
     {noreply, State#state{stage=stage3}};
 %% stage 4, security:verify
@@ -221,7 +222,7 @@ handle_info({impacket, {{msg, _, notify, _}, [{method,"msg_notify"}|Params], Xml
         false -> ok
     end,
     ReplyTo = if Type =:= 1 -> From; true -> To end,
-    IncomeTextMessage = msg_fmt:msg_to_list(Xml),
+    IncomeTextMessage = xmerl_msg:xml_to_list(Xml),
     [IncomeMessage] = util:xml_to_tuple(Xml),
     %% events notify
     hi_event:text_msg_notify(IncomeTextMessage, From, Type, ReplyTo),
@@ -238,7 +239,7 @@ handle_info({impacket, {{msg,_,request,_}, [{method,"tmsg_request"}|Params], Xml
     %% {v_time, V_Time} = lists:keyfind(v_time, 1, Params),
     %% {v_period, V_Period} = lists:keyfind(v_period, 1, Params),
     %% {v_code, V_Code} = lists:keyfind(v_code, 1, Params),
-    IncomeTextMessage = msg_fmt:msg_to_list(Xml),
+    IncomeTextMessage = xmerl_msg:xml_to_list(Xml),
     [IncomeMessage] = util:xml_to_tuple(Xml),
     ReplyTo = From,
     hi_event:text_msg_notify(IncomeTextMessage, From, Type, ReplyTo),

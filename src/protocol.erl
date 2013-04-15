@@ -13,8 +13,6 @@
 -export([make_packet/3, make_packet/1]).
 -export([make_stage_data/1, make_stage_data/2]).
 
-
-
 -include("const.hrl").
 
 %%%===================================================================
@@ -62,7 +60,8 @@ make_packet(normal, Data, AESKey) ->
     Category = 0,
     SendFlag = 0,
     _Packet = <<?BIN_PRO_VER_1_0:?UINT32, ?CT_TAG:?UINT32, % const
-                0:2, HeartBeat:1, Compress:1, Encrypt:1, ?CT_FLAG_CON_OK:3, 0:24,
+                0:2, HeartBeat:1, Compress:1, Encrypt:1, ?CT_FLAG_CON_OK:3,
+                0:24,                           % padding
                 SrcDataLen:?UINT32,
                 ZipDataLen:?UINT32,
                 DestDataLen:?UINT32,
@@ -77,7 +76,8 @@ make_packet(heartbeat) ->
     Category = 0,
     SendFlag = 0,
     _Packet = <<?BIN_PRO_VER_1_0:?UINT32, ?CT_TAG:?UINT32, % const
-                0:2, HeartBeat:1, Compress:1, Encrypt:1, ?CT_FLAG_KEEPALIVE:3, 0:24,
+                0:2, HeartBeat:1, Compress:1, Encrypt:1, ?CT_FLAG_KEEPALIVE:3,
+                0:24,                           % padding
                 SrcDataLen:?UINT32,
                 ZipDataLen:?UINT32,
                 DestDataLen:?UINT32,
@@ -128,14 +128,15 @@ decode_impacket(IMPacket) ->
                                     _            -> {_Key, _Val}
                                 end
                         end, _HeaderAssoc),
-    %% make 'method' first elem
-    Params = lists:sort(fun({Key1, _}, {Key2, _}) -> case {Key1, Key2} of
-                                                         {method, _} -> true;
-                                                         {_, method} -> false;
-                                                         {code, _} -> true;
-                                                         {_, code} -> false;
-                                                         _           -> false
-                                                     end
+    %% sort and make 'method' first elem
+    Params = lists:sort(fun({Key1, _}, {Key2, _}) ->
+                                case {Key1, Key2} of
+                                    {method, _} -> true;
+                                    {_, method} -> false;
+                                    {code, _}   -> true;
+                                    {_, code}   -> false;
+                                    _           -> false
+                                end
                         end, _Params),
     {{Command, Version, Type, Seq}, Params, Body}.
 
@@ -144,12 +145,6 @@ build_dynamic_password(Password, Seed) ->
     PassComb = util:to_hex_string(crypto:md5(Password)) ++ Seed,
     util:to_hex_string(crypto:md5(PassComb)).
 
-%%--------------------------------------------------------------------
-%% @doc
-%% @spec
-%% @end
-%%--------------------------------------------------------------------
-%% rsa crypto
 
 %%%===================================================================
 %%% Internal functions
@@ -157,10 +152,12 @@ build_dynamic_password(Password, Seed) ->
 make_impacket_header(Command, Version, Type, Seq) ->
     io_lib:format("~s ~s ~s ~w", [Command, Version, Type, Seq]).
 make_impacket(Header, Params, Body) ->
-    _Params = lists:keymap(fun(Val) -> if
-                                           is_integer(Val) -> integer_to_list(Val);
-                                           is_list(Val) -> Val
-                                       end
+    _Params = lists:keymap(fun(Val) when is_integer(Val) ->
+                                   integer_to_list(Val);
+                              (Val) when is_list(Val)    ->
+                                   Val
                            end, 2, Params),
-    ParamLines = lists:map(fun({Key,Val}) -> io_lib:format("~s:~s", [Key, Val]) end, _Params),
+    ParamLines = lists:map(fun({Key,Val}) ->
+                                   io_lib:format("~s:~s", [Key, Val])
+                           end, _Params),
     string:join([Header | ParamLines] ++ ["", Body], "\r\n").

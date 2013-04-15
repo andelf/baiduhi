@@ -9,7 +9,7 @@
 -module(xmerl_msg).
 
 %% API
--export([xml_to_tuple/1]).
+-export([xml_to_tuple/1, xml_to_list/1]).
 %% xmerl callbacks
 -export(['#xml-inheritance#'/0,
          '#root#'/4,
@@ -26,13 +26,14 @@
 xml_to_tuple(Xml) ->
     {Doc, _} = xmerl_scan:string(Xml),
     xmerl:export([Doc], ?MODULE).
-%%--------------------------------------------------------------------
-%% @doc
-%% @spec
-%% @end
+
+xml_to_list(Message) when is_list(Message) ->
+    {Doc, _} = xmerl_scan:string(Message),
+    lists:flatten(xmerl:export([Doc], xmerl_msg)).
 %%--------------------------------------------------------------------
 %% callbacks
 %% Tag := nil | {Tag, AttrsList, Data}
+%%--------------------------------------------------------------------
 '#xml-inheritance#'() ->
     [].
 
@@ -40,7 +41,6 @@ xml_to_tuple(Xml) ->
     "".
 
 '#root#'(Data, _Attrs, [], _E) ->
-    %% io:format("attr: ~w~n", [_Attrs]),
     Data.
 
 '#element#'(Tag, Data, Attrs, _Parents, _E) ->
@@ -48,15 +48,12 @@ xml_to_tuple(Xml) ->
     Data.
 
 msg(Data, _Attrs, _Parents, _E) ->
-    %% io:format("msg attr: ~p~n", [Attrs]),
     Data.
 
 font(Data, _Attrs, _Parents, _E) ->
-    %% io:format("font attr: ~p~n", [Attrs]),
     Data.
 
 text(Data, Attrs, _Parents, _E) ->
-    %% io:format("text attr: ~p~n", [Attrs]),
     case lists:keyfind(c, 2, Attrs) of
         #xmlAttribute{value=Text} ->
             [Data, Text];
@@ -65,7 +62,6 @@ text(Data, Attrs, _Parents, _E) ->
     end.
 
 url(Data, Attrs, _Parents, _E) ->
-    %% io:format("url attr: ~p~n", [Attrs]),
     case lists:keyfind(ref, 2, Attrs) of
         #xmlAttribute{value=Url} ->
             [Data, Url];
@@ -74,7 +70,6 @@ url(Data, Attrs, _Parents, _E) ->
     end.
 
 face(Data, Attrs, _Parents, _E) ->
-    %% io:format("face attr: ~p~n", [Attrs]),
     case lists:keyfind(n, 2, Attrs) of
         #xmlAttribute{value=Name} when length(Name) > 0 ->
             [Data, "[", Name, "]"];
@@ -105,7 +100,3 @@ thumb(Data, _Attrs, _Parents, _E) ->
 
 imagedata(Data, _Attrs, _Parents, _E) ->
     Data.
-
-%%%===================================================================
-%%% Internal functions
-%%%===================================================================

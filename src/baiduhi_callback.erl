@@ -6,7 +6,7 @@
 %%% @end
 %%% Created :  9 Aug 2012 by Feather.et.ELF <fledna@qq.com>
 %%%-------------------------------------------------------------------
--module(gen_baiduhi_callback).
+-module(baiduhi_callback).
 
 %% API
 -export([start_link/3]).
@@ -21,10 +21,5 @@ behaviour_info(callbacks) ->
 behaviour_info(_Other) ->
     undefined.
 
-start_link(Callback, Priority, Args) ->
+start_link(_Callback, _Priority, _Args) ->
     ok.
-
-
-%%%===================================================================
-%%% Internal functions
-%%%===================================================================

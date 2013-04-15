@@ -64,7 +64,7 @@ send_temp_message(To, Message) ->
 %% contacts
 query_contact(Imid) ->
     query_contact(Imid, [imid, baiduid, status, personal_comment, nickname,
-                            name, email, music, cli_type, friendly_level]).
+                         name, email, music, cli_type, friendly_level]).
 query_contact(Imid, Fields) ->
     case query_contacts([Imid], Fields) of
         {ok, [Contact]} ->
@@ -75,7 +75,7 @@ query_contact(Imid, Fields) ->
 
 query_contacts(Imids) ->
     query_contacts(Imids, [imid, baiduid, status, personal_comment, nickname,
-                              name, email, music, cli_type, friendly_level]).
+                           name, email, music, cli_type, friendly_level]).
 query_contacts(Imids, Fields) ->
     hi_client:sendpkt_async(
       protocol_helper:'contact#query'(lists:map(fun util:to_list/1, Fields),
@@ -119,7 +119,7 @@ query_online(Acc) ->
                 200 ->
                     {ok, Acc ++ Imids};
                 210 ->
-                    {to_be, Acc ++ Imids}       %FIXME: list too long
+                    {continue, Acc ++ Imids}       %FIXME: list too long
             end
     end.
 
@@ -202,12 +202,12 @@ add_friend(VerifyHeaders, Imid, RequestNote) ->
 
 add_friend_reply(Agree, Imid) ->
     add_friend_reply(Agree, Imid, "").
-add_friend_reply(Agree, Imid, RejectReason) ->
-    AgreeNo = case Agree of
-                  true -> 1;
-                  false -> 0
-              end,
-    hi_client:sendpkt_async(protocol_helper:'friend#add_ack'(AgreeNo, Imid, RejectReason)),
+add_friend_reply(agree, Imid, RejectReason) ->
+    add_friend_reply(1, Imid, RejectReason);
+add_friend_reply(reject, Imid, RejectReason) ->
+    add_friend_reply(0, Imid, RejectReason);
+add_friend_reply(Agree, Imid, RejectReason) when is_integer(Agree) ->
+    hi_client:sendpkt_async(protocol_helper:'friend#add_ack'(Agree, Imid, RejectReason)),
     receive
         {ack, {_, [{method, "add_ack"}, {code, Code}|_Params], []}=_IMPacket} ->
             case Code of
@@ -399,6 +399,21 @@ is_baiduer(imid, Imid) ->
             false
     end.
 
+%%%===================================================================
+%%% Helper functions
+%%%===================================================================
+baiduid_to_imid(Baiduid) ->
+    baiduhi:find_friend(Baiduid).
+
+imid_to_baiduhi(Imid) ->
+    {ok, Prop} = baiduhi:query_contact(Imid, [baiduid]),
+    case proplists:get_value(baiduid, Prop) of
+        undefined ->
+            {error, not_found};
+        Baiduid ->
+            {ok, Baiduid}
+    end.
+
 
 %%%===================================================================
 %%% Internal functions
@@ -406,7 +421,8 @@ is_baiduer(imid, Imid) ->
 send_message(Type, To, Message) ->
     MessageBody = util:tuple_to_xml(
                     {msg, [], [{font, [{n, "Fixedsys"},
-                                       {s, 10}, {b, 0}, {i, 0}, {ul, 0}, {c, 16#0000CC},
+                                       {s, 10}, {b, 0}, {i, 0},
+                                       {ul, 0}, {c, 16#0000CC},
                                        {cs, 134}],
                                 []},
                                {text, [{c, util:to_list(Message)}], []}
@@ -415,7 +431,8 @@ send_message(Type, To, Message) ->
 
 
 send_raw_message(4, To, MessageBody) ->
-    VerifyHeaders = [],                         % fuck, baiduhi doesn't use this field
+    %% fuck, baiduhi doesn't use this field
+    VerifyHeaders = [],
     hi_client:sendpkt_async(protocol_helper:'msg#tmsg_request'(VerifyHeaders, To, MessageBody)),
     receive
         {ack, {{msg, _, ack, _}, [{method, "tmsg_request"}, {code, Code}|_], _Xml}} ->
@@ -427,7 +444,7 @@ send_raw_message(4, To, MessageBody) ->
 send_raw_message(Type, To, MessageBody) ->
     hi_client:sendpkt_async(protocol_helper:'msg#msg_request'(Type, To, MessageBody)),
     receive
-        {ack, {{msg, _, ack, _}, [{method, "msg_request"}, {code, Code}|_], _Xml}} ->
+        {ack, {{msg, _, ack, _}, [{method, "msg_request"}, {code, Code}|_], _}} ->
             case Code of
                 200 -> ok;
                 Other -> {error, Other}

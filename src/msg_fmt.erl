@@ -9,9 +9,7 @@
 -module(msg_fmt).
 
 %% API
--export([img_tag/1, msg_to_list/1]).
-
--include_lib("xmerl/include/xmerl.hrl").
+-export([img_tag/1, make_imgdata/1]).
 
 %%%===================================================================
 %%% API
@@ -26,10 +24,6 @@ img_tag({imgdata, Type, Data}) ->
     {img, [{md5, Md5}, {t, Type}, {n, lists:sublist(Md5, 8)}],
      [{image, [{imagedata, ImageData}], []}]}.
 
-
-msg_to_list(Message) when is_list(Message) ->
-    {Doc, _} = xmerl_scan:string(Message),
-    lists:flatten(xmerl:export([Doc], xmerl_msg)).
 
 
 %%--------------------------------------------------------------------

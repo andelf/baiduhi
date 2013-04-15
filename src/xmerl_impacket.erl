@@ -23,31 +23,26 @@
 xml_to_tuple(Xml) ->
     {Doc, _} = xmerl_scan:string(Xml),
     xmerl:export([Doc], ?MODULE).
-%%--------------------------------------------------------------------
-%% @doc
-%% @spec
-%% @end
+
 %%--------------------------------------------------------------------
 %% callbacks
 %% Tag := nil | {Tag, AttrsList, Data}
+%%--------------------------------------------------------------------
 '#xml-inheritance#'() ->
     [].
 
+%% impacket do not use any text tag.
 '#text#'(_Text) ->
-    %% no text tag
     [].
 
 '#root#'(Data, _Attrs, [], _E) ->
     Data.
 
 '#element#'(Tag, Data, Attrs, _Parents, _E) ->
-    AttrsList = lists:map(fun(#xmlAttribute{name=Name, value=Val}) -> {Name, Val} end,
-                          Attrs),
+    AttrsList = lists:map(fun(#xmlAttribute{name=Name, value=Val}) ->
+                                  {Name, Val}
+                          end, Attrs),
     {Tag, AttrsList, lists:filter(fun([]) -> false;
                                      (_)  -> true
                                   end,
                                   Data)}.
-
-%%%===================================================================
-%%% Internal functions
-%%%===================================================================
