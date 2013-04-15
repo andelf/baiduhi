@@ -44,7 +44,7 @@ tuple_to_xml(Data) ->
 
 xml_to_tuple(Xml) ->
     {Doc, _} = xmerl_scan:string(Xml),
-    xmerl:export([Doc], xmerl_impacket).
+    xmerl:export([Doc], xmerl_tuple).
 
 %% crypto
 rsa_public_decrypt(Data, Key) ->

@@ -6,7 +6,7 @@
 %%% @end
 %%% Created : 15 Jul 2012 by Feather.et.ELF <fledna@qq.com>
 %%%-------------------------------------------------------------------
--module(xmerl_impacket).
+-module(xmerl_tuple).
 
 %% API
 -export([xml_to_tuple/1]).
@@ -31,7 +31,7 @@ xml_to_tuple(Xml) ->
 '#xml-inheritance#'() ->
     [].
 
-%% impacket do not use any text tag.
+%% impacket do not use any text tag. here we ignore all text.
 '#text#'(_Text) ->
     [].
 
@@ -44,5 +44,4 @@ xml_to_tuple(Xml) ->
                           end, Attrs),
     {Tag, AttrsList, lists:filter(fun([]) -> false;
                                      (_)  -> true
-                                  end,
-                                  Data)}.
+                                  end, Data)}.

@@ -10,6 +10,7 @@
 
 -behaviour(gen_event).
 
+-compile([{parse_transform, lager_transform}]).
 %% API
 -export([start_link/0, add_handler/0]).
 
