@@ -28,7 +28,7 @@ make_msg(Text) ->
     make_msg(Text, []).
 make_msg(Text, Prop) ->
     util:tuple_to_xml({msg, [], [prop_to_fontspec(Prop),
-                                 {text, [{c, Text}], []}
+                                 {text, [{c, util:to_list(Text)}], []}
                                 ]}).
 
 %%%===================================================================

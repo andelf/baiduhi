@@ -199,8 +199,8 @@ handle_info({tcp, Sock, Bin}, #state{sock=Sock,
                                 undefined ->
                                     ClientPid ! {impacket, IMPacket},
                                     {noreply, State#state{gathered=Rest1}, Timeout};
-                                {Pid, _Ref} ->
-                                    Pid ! {ack, IMPacket},
+                                {Pid, Ref} ->
+                                    Pid ! {impacket_ack, Ref, IMPacket},
                                     {noreply, State#state{gathered=Rest1}, Timeout}
                             end;
                         {_, _, _} = IMPacket ->

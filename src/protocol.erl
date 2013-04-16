@@ -30,10 +30,7 @@ make_packet(stage, ConFlag, Data) ->
     HeartBeat = 0,
     Compress = 0,
     Encrypt = 0,
-    BinData = if
-                  is_binary(Data) -> Data;
-                  is_list(Data) -> binary:list_to_bin(Data)
-              end,
+    BinData = iolist_to_binary(Data),
     SrcDataLen = ZipDataLen = DestDataLen = byte_size(BinData),
     Category = 0,
     SendFlag = 0,
@@ -49,10 +46,7 @@ make_packet(normal, Data, AESKey) ->
     HeartBeat = 0,
     Compress = 0,
     Encrypt = 1,
-    SrcData = if
-                  is_binary(Data) -> Data;
-                  is_list(Data) -> binary:list_to_bin(Data)
-              end,
+    SrcData = iolist_to_binary(Data),
     ZipData = SrcData,
     DestData = util:aes_encrypt(ZipData, AESKey),
     SrcDataLen = ZipDataLen = byte_size(SrcData),
@@ -152,12 +146,9 @@ build_dynamic_password(Password, Seed) ->
 make_impacket_header(Command, Version, Type, Seq) ->
     io_lib:format("~s ~s ~s ~w", [Command, Version, Type, Seq]).
 make_impacket(Header, Params, Body) ->
-    _Params = lists:keymap(fun(Val) when is_integer(Val) ->
-                                   integer_to_list(Val);
-                              (Val) when is_list(Val)    ->
-                                   Val
-                           end, 2, Params),
+    _Params = lists:keymap(fun util:to_list/1, 2, Params),
     ParamLines = lists:map(fun({Key,Val}) ->
-                                   io_lib:format("~s:~s", [Key, Val])
+                                   io_lib:format("~s:~s", [util:to_list(Key),
+                                                           util:to_list(Val)])
                            end, _Params),
     string:join([Header | ParamLines] ++ ["", Body], "\r\n").

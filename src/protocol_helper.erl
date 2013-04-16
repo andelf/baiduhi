@@ -12,6 +12,9 @@
 %%-export([]).
 -compile(export_all).
 
+
+-define(TO_STRING_LIST(A), lists:map(fun util:to_list/1, A)).
+-define(TO_STRING(A), util:to_list(A)).
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -25,7 +28,7 @@
     'login#login'(VerifyHeaders, DynamicPassword);
 'login#login'(VerifyHeaders, DynamicPassword) ->
     Params = [{method, "login"}|VerifyHeaders],
-    Timestamp = util:to_list(util:timestamp()),
+    Timestamp = ?TO_STRING(util:timestamp()),
     Body = util:tuple_to_xml(
              {login, [], [{user, [{account, hi_state:get(username)},
                                   {password, DynamicPassword},
@@ -112,9 +115,9 @@
      [{method, "add_ack"},
       {uid, hi_state:uid()}],
      util:tuple_to_xml(
-       {add_ack, [{time, util:to_list(util:timestamp())},
-                  {agree, util:to_list(Agree)},
-                  {imid, util:to_list(Imid)},
+       {add_ack, [{time, ?TO_STRING(util:timestamp())},
+                  {agree, ?TO_STRING(Agree)},
+                  {imid, ?TO_STRING(Imid)},
                   {reject_reason, RejectReason}],
         []})}.
 
@@ -123,10 +126,10 @@
      [{method, "add"},
       {uid, hi_state:uid()}|VerifyHeaders],
      util:tuple_to_xml(
-       {add_friend, [{time, util:to_list(util:timestamp())},
-                     {imid, util:to_list(Imid)},
+       {add_friend, [{time, ?TO_STRING(util:timestamp())},
+                     {imid, ?TO_STRING(Imid)},
                      {team, "0"},
-                     {request_note, util:to_list(RequestNote)}],
+                     {request_note, ?TO_STRING(RequestNote)}],
         []})}.
 
 'friend#delete'(VerifyHeaders, Imid) ->
@@ -134,7 +137,7 @@
      [{method, "delete"},
       {uid, hi_state:uid()}|VerifyHeaders],
      util:tuple_to_xml(
-       {delete_friend, [{imid, util:to_list(Imid)}], []})}.
+       {delete_friend, [{imid, ?TO_STRING(Imid)}], []})}.
 
 %% user
 %% user:set
@@ -195,7 +198,9 @@
      [{method, "query"},
       {uid, hi_state:uid()}],
      util:tuple_to_xml(
-       {'query', [{fields, string:join(Fields, ";")}], []})}.
+       {'query', [{fields, string:join(
+                             ?TO_STRING_LIST(Fields),
+                             ";")}], []})}.
 
 'user#login_ready'() ->
     'user#login_ready'("1").
@@ -204,7 +209,7 @@
      [{method, "login_ready"},
       {uid, hi_state:uid()}],
      util:tuple_to_xml(
-       {login, [], [{user, [{status, util:to_list(Status)},
+       {login, [], [{user, [{status, ?TO_STRING(Status)},
                             {localeid, "2052"},
                             {imversion, "2,1,0,1"},
                             {pc_code, "BDIMXV2-O_1-C_9-D_3-M_4-V_5"}], []}]})}.
@@ -227,8 +232,8 @@
       {uid, hi_state:uid()}],
      %% query is a reversed word
      util:tuple_to_xml(
-       {'query', [{fields, string:join(Fields, ";")},
-                  {id, string:join(ImidList, ";")}],
+       {'query', [{fields, string:join(?TO_STRING_LIST(Fields), ";")},
+                  {id, string:join(?TO_STRING_LIST(ImidList), ";")}],
              []})}.
 
 %% 从大到小返回
@@ -293,9 +298,8 @@
       {gid, Gid}],
      util:tuple_to_xml(
        {add_member, [], lists:map(fun(Imid) ->
-                                          {member, [{imid, Imid}], []}
-                                  end,
-                                  ImidList)})}.
+                                          {member, [{imid, ?TO_STRING(Imid)}], []}
+                                  end, ImidList)})}.
 
 %% 管理员不可以删除管理员，群主可以删除自己之外的任何人
 'group#delete_member'(Gid, ImidList) ->
@@ -304,10 +308,10 @@
       {uid, hi_state:uid()},
       {gid, Gid}],
      util:tuple_to_xml(
-       {delete_member, [], lists:map(fun(Imid) ->
-                                             {member, [{imid, Imid}], []}
-                                  end,
-                                  ImidList)})}.
+       {delete_member, [], lists:map(
+                             fun(Imid) ->
+                                     {member, [{imid, ?TO_STRING(Imid)}], []}
+                             end, ImidList)})}.
 
 %% 群成员使用本方法可以从群中退出
 'group#quit'(Gid) ->
@@ -325,7 +329,7 @@
       {uid, hi_state:uid()},
       {gid, Gid}],
      util:tuple_to_xml(
-       {join_group, [{time, util:to_list(util:timestamp())},
+       {join_group, [{time, ?TO_STRING(util:timestamp())},
                      {request_note, RequestNote}],
         []})}.
 
@@ -410,7 +414,7 @@
                      {find_enable, "1"},
                      {hide_enable, "0"}],
         lists:map(fun(Imid) ->
-                          {member, [{imid, Imid}], []}
+                          {member, [{imid, ?TO_STRING(Imid)}], []}
                   end, ImidList)})}.
 
 'multi#quit'(Mid) ->
@@ -435,7 +439,7 @@
      util:tuple_to_xml(
        {member_set, [],
         lists:map(fun(Imid) ->
-                          {member, [{imid, Imid}], []}
+                          {member, [{imid, ?TO_STRING(Imid)}], []}
                   end, ImidList)})}.
 
 
@@ -446,8 +450,8 @@
       {uid, hi_state:uid()}],
      util:tuple_to_xml(
        {game, [{name, "rob_wealth"},
-               {uid, util:to_list(Imid)},
-               {level, util:to_list(Level)}], []})}.
+               {uid, ?TO_STRING(Imid)},
+               {level, ?TO_STRING(Level)}], []})}.
 
 
 
@@ -456,7 +460,6 @@
 imagesvr() ->
     {{imagesvr, "1.0", request, hi_state:seq()},
      [{from, hi_state:uid()},
-
       {tgtype,999}], []}.
 
 %% [2,210,254,3,123,125,113,34,1,187]
@@ -467,7 +470,6 @@ parse_imagesvr(Data) when is_binary(Data) ->
       IP:32/little-unsigned-integer,
       Port:16/little-unsigned-integer, _/binary>> = Data,
     {Token, IP, Port}.
-
 
 %%%===================================================================
 %%% Internal functions

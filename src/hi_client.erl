@@ -11,7 +11,7 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/0, start_link/2, stop/0, sendpkt_async/1]).
+-export([start_link/0, start_link/2, stop/0, async_impacket_requet/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -54,11 +54,24 @@ start_link() ->
 start_link(Username, Password) ->
     gen_server:start_link({local, ?SERVER}, ?MODULE,
                           [{username, Username}, {password, Password}], []).
-sendpkt_async(ImPacket) ->
-    gen_server:call(?SERVER, {sendpkt_async, ImPacket}).
 
 stop() ->
     gen_server:cast(?SERVER, stop).
+
+async_impacket_requet({{_,_,request,Seq},_,_} = ImPacket) ->
+    %% evaluate self() in caller process
+    Pid = self(),
+    Ref = make_ref(),
+    hi_state:set(Seq, {Pid, Ref}),
+    gen_server:cast(?SERVER, {async_sendpkt, ImPacket}),
+    receive
+        {impacket_ack, Ref, AckImpacket} ->
+            {ok, AckImpacket}
+    after 1000 ->
+            {error, time_out}
+    end.
+
+
 %%%===================================================================
 %%% gen_server callbacks
 %%%===================================================================
@@ -94,13 +107,6 @@ init(Config) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_call({sendpkt_async, {{_,_,request,Seq},_,_} = IMPacket}, From,
-            #state{sock=Sock, aeskey=AESKey} = State) ->
-    hi_state:set(Seq, From),                    % register callback path
-    Data = protocol:encode_impacket(IMPacket),
-    Reply = gen_tcp:send(Sock, protocol:make_packet(normal, Data, AESKey)),
-    {reply, Reply, State};
-
 handle_call(_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
@@ -115,6 +121,11 @@ handle_call(_Request, _From, State) ->
 %%                                  {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
+handle_cast({async_sendpkt, {{_,_,request,_},_,_} = IMPacket},
+            #state{sock=Sock, aeskey=AESKey} = State) ->
+    BinData = protocol:encode_impacket(IMPacket),
+    ok = gen_tcp:send(Sock, protocol:make_packet(normal, BinData, AESKey)),
+    {noreply, State};
 handle_cast(stop, State) ->
     {stop, normal, State};
 handle_cast(_Msg, State) ->
@@ -208,7 +219,6 @@ handle_info({impacket, {{user, _, ack, _}, [{method,"login_ready"},{code,200}|_]
 %% ----------------------------------------
 %% Handle request
 %% ----------------------------------------
-%%
 handle_info({impacket, {{msg, _, notify, _}, [{method,"msg_notify"}|Params], Xml}},
             State) ->
     {from, From} = lists:keyfind(from, 1, Params),
@@ -232,13 +242,7 @@ handle_info({impacket, {{msg, _, notify, _}, [{method,"msg_notify"}|Params], Xml
 %% 临时会话
 handle_info({impacket, {{msg,_,request,_}, [{method,"tmsg_request"}|Params], Xml}}, State) ->
     {from, From} = lists:keyfind(from, 1, Params),
-    %% {type, Type} = lists:keyfind(type, 1, Params), %type=2 group, type=3 multi, type=4 temp
-    Type = 4,
-    %% {to, To} = lists:keyfind(to, 1, Params),
-    %% {v_url, V_Url} = lists:keyfind(v_url, 1, Params),
-    %% {v_time, V_Time} = lists:keyfind(v_time, 1, Params),
-    %% {v_period, V_Period} = lists:keyfind(v_period, 1, Params),
-    %% {v_code, V_Code} = lists:keyfind(v_code, 1, Params),
+    Type = 4,                                   % fake as type 4
     IncomeTextMessage = xmerl_msg:xml_to_list(Xml),
     [IncomeMessage] = util:xml_to_tuple(Xml),
     ReplyTo = From,
@@ -262,8 +266,8 @@ handle_info({impacket,{{group,_,notify,_}, [{method,"delete_member_notify"}|_Par
     {noreply, State};
 
 handle_info({impacket,{{group,_,notify,_}, [{method,"card_change_notify"}|Params], Xml}}, State) ->
-    {imid, Imid} = lists:keyfind(Params, 1, imid),
-    {gid, Gid} = lists:keyfind(Params, 1, gid),
+    Imid = proplists:get_value(imid, Params),
+    Gid = proplists:get_value(gid, Params),
     [{card, Info, []}] = util:xml_to_tuple(Xml),
     hi_event:group_card_change_notify(Gid, Imid, Info),
     {noreply, State};
@@ -309,7 +313,6 @@ handle_info({impacket, {{cm, _, request, _}, [{method, "scene"}|_], _}}, State) 
 %%--------------------------------------------------------------------
 %% handle ack
 handle_info({impacket, {{msg,_,ack,_}, [{method, _Method}|_], _}}, State) ->
-    %%logger:log(normal, "msg:~s ack", [Method]),
     {noreply, State};
 
 %%--------------------------------------------------------------------
@@ -326,7 +329,7 @@ handle_info(tcp_closed, State) ->
     logger:log(error, "tcp closed!"),
     {stop, tcp_closed, State};
 handle_info(_Info, State) ->
-    io:format("hi_client: handle_info() ~p~n", [_Info]),
+    io:format("hi_client: handle_info() unkown term: ~p~n", [_Info]),
     {noreply, State}.
 
 %%--------------------------------------------------------------------
@@ -362,7 +365,6 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-
 lookup_root_pub_key(KeyNo) ->
     PubPkcs1 = lists:nth(1+KeyNo, ?RootPubKeyPKCS_1),
     util:pkcs1_to_rsa_pubkey(PubPkcs1).
