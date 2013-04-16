@@ -4,6 +4,8 @@
 
 This is a Baidu Hi client, written by erlang.
 
+请区别 Baidu Id, Imid.
+
 使用方法:
 
 Usage:
@@ -13,6 +15,14 @@ Usage:
     $ ERL_LIBS=./deps erl -pa ../baiduhi/ebin
     ...
     > baiduhi:start().
+
+用法2:
+
+Alternative:
+
+    $ make
+    $ make run
+    $ make clean
 
 注意:
 
