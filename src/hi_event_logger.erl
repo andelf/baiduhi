@@ -123,7 +123,7 @@ handle_event({group_delete_member_notify, Gid, Manager, Imids}, State) ->
     {ok, State};
 
 handle_event(Event, State) ->
-    error_logger:info_msg("unhandled log ~p", [Event]),
+    error_logger:info_msg("unhandled event ~p", [Event]),
     {ok, State}.
 
 %%--------------------------------------------------------------------
