@@ -146,15 +146,26 @@ query_online(Acc) ->
     end.
 
 %% friends
+
+    
 get_friends() ->
+    get_friends(0).
+get_friends(Page) ->
     {ok, {_, [{method, "get_friend"}, {code, Code}|_], Xml}} =
-        hi_client:async_impacket_requet(protocol_helper:'friend#get_friend'()),
+        hi_client:async_impacket_requet(protocol_helper:'friend#get_friend'(Page)),
     [{friend_set, [], FriendNodes}] = util:xml_to_tuple(Xml),
     FriendAttrs = lists:map(fun({friend, Attr, []}) -> Attr end,
                             FriendNodes),
     case Code of
         200 ->
             {ok, FriendAttrs};
+	210 ->
+	    case get_friends(Page+1) of
+		{ok, FriendAttrs1} ->
+		    {ok, FriendAttrs ++ FriendAttrs1};
+		{error, Code1, Gotted} ->
+		    {error, Code1, FriendAttrs ++ Gotted}
+	    end;
         Other ->
             {error, Other, FriendAttrs}
     end.
@@ -374,7 +385,7 @@ is_baiduer(imid, Imid) ->
 baiduid_to_imid(Baiduid) ->
     baiduhi:find_friend(Baiduid).
 
-imid_to_baiduhi(Imid) ->
+imid_to_baiduid(Imid) ->
     {ok, Prop} = baiduhi:query_contact(Imid, [baiduid]),
     case proplists:get_value(baiduid, Prop) of
         undefined ->

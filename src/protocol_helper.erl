@@ -76,11 +76,11 @@
      ""}.
 
 %% friend
-'friend#get_friend'() ->
+'friend#get_friend'(Ind) when is_integer(Ind) andalso Ind >= 0 ->
     {{friend, "1.0", request, hi_state:seq()},
      [{method, "get_friend"},
       {uid, hi_state:uid()},
-      {page, 0},
+      {page, Ind},
       {timestamp, 0}],
      []}.
 
