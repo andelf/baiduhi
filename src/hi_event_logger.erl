@@ -75,7 +75,7 @@ init([]) ->
 %%                          remove_handler
 %% @end
 %%--------------------------------------------------------------------
-handle_event(user_login_ready, State) ->
+handle_event({user_login_ready, _}, State) ->
     error_logger:info_msg("login ready: username=~p id=~p", [hi_state:get(username),
                                                              hi_state:uid()]),
     {ok, State};

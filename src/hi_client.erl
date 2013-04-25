@@ -170,6 +170,7 @@ handle_info({stage4, {Seed, _KeepAliveSpace, S4Data}},
     S3PrvKey = util:pkcs1_to_rsa_prvkey(?HiPrvKey),
     AESKey = util:rsa_private_decrypt(S4Data, S3PrvKey),
     hi_dispatcher:set_aeskey(AESKey),
+    hi_state:set(aeskey, AESKey),
     error_logger:info_msg("aes key: ~p", [util:to_hex_string(AESKey)]),
     self() ! {sendpkt, protocol_helper:'security#verify'(login)},
     {noreply, State#state{stage=on_security_response,
@@ -202,6 +203,7 @@ handle_info({impacket, {{login, _, ack, _}, [{method,"login"},{code,200}|_], Xml
     Uid = list_to_integer(StrUid),              % always use integer uid
     hi_state:uid(Uid),                        % set uid
     hi_state:set(imid, Uid),
+
     self() ! {sendpkt, protocol_helper:'user#login_ready'()},
     %% empty config state, for safty
     {noreply, State#state{stage=on_login_ready_response, config=[]}};
@@ -214,7 +216,7 @@ handle_info({impacket, {{user, _, ack, _}, [{method,"login_ready"},{code,200}|_]
             #state{sock=Sock, stage=on_login_ready_response} = State) ->
     hi_heartbeat:set_sock(Sock),
     hi_heartbeat:set_timeout(40000),
-    hi_event:user_login_ready(),
+    hi_event:user_login_ready(hi_state:uid()),
     {noreply, State#state{stage=normal}};
 %% ----------------------------------------
 %% Handle request
@@ -222,8 +224,10 @@ handle_info({impacket, {{user, _, ack, _}, [{method,"login_ready"},{code,200}|_]
 handle_info({impacket, {{msg, _, notify, _}, [{method,"msg_notify"}|Params], Xml}},
             State) ->
     {from, From} = lists:keyfind(from, 1, Params),
-    {type, Type} = lists:keyfind(type, 1, Params), %type=2 group, type=3 multi
-    {to, To} = lists:keyfind(to, 1, Params),     %联系人ID|群ID|临时群ID
+    %% type=2 group, type=3 multi
+    {type, Type} = lists:keyfind(type, 1, Params),
+    %% 联系人ID|群ID|临时群ID
+    {to, To} = lists:keyfind(to, 1, Params),
     {msgid, MsgId} = lists:keyfind(msgid, 1, Params),
     %% ack
     case lists:keyfind(waitack, 1, Params) of

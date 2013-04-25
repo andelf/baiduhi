@@ -9,7 +9,8 @@
 -module(protocol).
 
 %% API
--export([decode_impacket/1, encode_impacket/1, build_dynamic_password/2]).
+-export([decode_packet/1, decode_impacket/1, encode_impacket/1,
+         build_dynamic_password/2, raw_packet_precheck/1]).
 -export([make_packet/3, make_packet/1]).
 -export([make_stage_data/1, make_stage_data/2]).
 
@@ -18,6 +19,65 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
+raw_packet_precheck(Raw) when byte_size(Raw) < 4 * 10 ->
+    partical;
+raw_packet_precheck(<<?BIN_PRO_VER_1_0:?UINT32, _Padding:16/binary,
+                      DestDataLen:?UINT32, _:16/binary,
+                      Rest/binary>>) ->
+    case byte_size(Rest) of
+        S when S >= DestDataLen ->
+            ok;
+        _ ->
+            partical
+    end.
+
+%% decode_packet(binary()) -> {packet(), Rest}
+decode_packet(Raw) ->
+    <<?BIN_PRO_VER_1_0:?UINT32,
+      ?CT_TAG:?UINT32,
+      0:2, HeartBeat:1, Compress:1, Encrypt:1, ConFlag:3, 0:24,
+      SrcDataLen:?UINT32,
+      ZipDataLen:?UINT32,
+      DestDataLen:?UINT32,
+      _SendFlag:?UINT32,
+      _Category:?UINT32,
+      0:64,                            % padding
+      DestData:DestDataLen/binary, Rest/binary>> = Raw,
+    if ConFlag == ?CT_FLAG_CON_S2 ->
+            <<ConMethod:?UINT8, RootKeyNo:?UINT8, RootKeyLen:?UINT32,
+              0:?UINT32, 0:?UINT32,
+              DataLen:?UINT32,
+              Data:DataLen/binary>> = DestData,
+            {{stage2, {ConMethod, RootKeyNo, RootKeyLen, Data}}, Rest};
+       ConFlag == ?CT_FLAG_CON_S4 ->
+            <<Seed:?RANDOM_KEY_SEED_LEN/binary, KeepAliveSpace:?UINT32,
+              0:?UINT32, 0:?UINT32,
+              DataLen:?UINT32,
+              Data:DataLen/binary,
+              "<ts_config><heartbeat sign_interval=\"40\" ",
+              "echo_timeout=\"80\"/></ts_config>">> = DestData,
+            {{stage4, {Seed, KeepAliveSpace, Data}}, Rest};
+       HeartBeat == 1 ->
+            %% heartbeat 1.0 N 0, method:heartbeat, uid:65858906
+            {{heartbeat}, Rest};
+       Encrypt == 1 ->
+            <<ZipData:ZipDataLen/binary, _/binary>> =
+                util:aes_decrypt(DestData, hi_state:get(aeskey)),
+            if
+                Compress =:= 1 ->
+                    <<SrcData:SrcDataLen/binary, _/binary>> =
+                        zlib:uncompress(ZipData);
+                true ->
+                    <<SrcData:SrcDataLen/binary, _/binary>> = ZipData
+            end,
+            case protocol:decode_impacket(SrcData) of
+                {_, _, _} = IMPacket ->
+                    {{impacket, IMPacket}, Rest};
+                _Other ->
+                    {{error, "packet decode error!"}, Rest}
+            end
+    end.
+
 make_stage_data(stage1) ->
     EPVer = 1,
     ConMethod = <<2, 0, 0, 0>>,

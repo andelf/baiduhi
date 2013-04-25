@@ -140,76 +140,13 @@ handle_info(timeout, #state{sock=Sock} = State) ->
     {noreply, State};
 
 handle_info({tcp, Sock, Bin}, #state{sock=Sock,
-                                     gathered=Gathered,
-                                     client_process=ClientPid,
-                                     aeskey=AESKey,
-                                     timeout=Timeout} = State) ->
+                                     gathered=Gathered} = State) ->
     RawData = <<Gathered/binary, Bin/binary>>,
-    if
-        byte_size(RawData) < 4 * 10 ->
+    case protocol:raw_packet_precheck(RawData) of
+        partical ->
             {noreply, State#state{gathered=RawData}};
-        true ->
-            <<?BIN_PRO_VER_1_0:?UINT32,
-              ?CT_TAG:?UINT32,
-              0:2, HeartBeat:1, Compress:1, Encrypt:1, ConFlag:3, 0:24,
-              SrcDataLen:?UINT32,
-              ZipDataLen:?UINT32,
-              DestDataLen:?UINT32,
-              _SendFlag:?UINT32,
-              _Category:?UINT32,
-              0:64,                            % padding
-              Rest/binary>> = RawData,
-            if  byte_size(Rest) < DestDataLen ->
-                    {noreply, State#state{gathered=RawData}};
-                ConFlag =:= ?CT_FLAG_CON_S2 ->
-                    <<DestData:DestDataLen/binary, Rest1/binary>> = Rest,
-                    <<ConMethod:?UINT8, RootKeyNo:?UINT8, RootKeyLen:?UINT32,
-                      0:?UINT32, 0:?UINT32,
-                      DataLen:?UINT32,
-                      Data:DataLen/binary>> = DestData,
-                    ClientPid ! {stage2, {ConMethod, RootKeyNo, RootKeyLen, Data}},
-                    {noreply, State#state{gathered=Rest1}};
-                ConFlag =:= ?CT_FLAG_CON_S4 ->
-                    <<DestData:DestDataLen/binary, Rest1/binary>> = Rest,
-                    <<Seed:?RANDOM_KEY_SEED_LEN/binary, KeepAliveSpace:?UINT32,
-                      0:?UINT32, 0:?UINT32,
-                      DataLen:?UINT32,
-                      Data:DataLen/binary,
-                      "<ts_config><heartbeat sign_interval=\"40\" ",
-                      "echo_timeout=\"80\"/></ts_config>">> = DestData,
-                    ClientPid ! {stage4, {Seed, KeepAliveSpace, Data}},
-                    {noreply, State#state{gathered=Rest1}};
-                HeartBeat =:= 1 ->
-                    <<_DestData:DestDataLen/binary, Rest1/binary>> = Rest,
-                    hi_heartbeat ! heartbeat,
-                    %% heartbeat 1.0 N 0, method:heartbeat, uid:65858906
-                    {noreply, State#state{gathered=Rest1}, Timeout};
-                Encrypt =:= 1 ->
-                    <<DestData:DestDataLen/binary, Rest1/binary>> = Rest,
-                    <<ZipData:ZipDataLen/binary, _/binary>> = util:aes_decrypt(DestData, AESKey),
-                    if
-                        Compress =:= 1 ->
-                            <<SrcData:SrcDataLen/binary, _/binary>> = zlib:uncompress(ZipData);
-                        true ->
-                            <<SrcData:SrcDataLen/binary, _/binary>> = ZipData
-                    end,
-                    case protocol:decode_impacket(SrcData) of
-                        {{_, _, ack, Seq}, _, _} = IMPacket ->
-                            case hi_state:get(Seq) of
-                                undefined ->
-                                    ClientPid ! {impacket, IMPacket},
-                                    {noreply, State#state{gathered=Rest1}, Timeout};
-                                {Pid, Ref} ->
-                                    Pid ! {impacket_ack, Ref, IMPacket},
-                                    {noreply, State#state{gathered=Rest1}, Timeout}
-                            end;
-                        {_, _, _} = IMPacket ->
-                            ClientPid ! {impacket, IMPacket},
-                            {noreply, State#state{gathered=Rest1}, Timeout};
-                        _Other ->
-                            {stop, "packet decode error!", State}
-                    end
-            end
+        ok ->
+            handle_packet(RawData, State)
     end;
 handle_info({tcp_closed, _What}, State) ->
     {stop, normal, State};
@@ -245,3 +182,27 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+handle_packet(RawData, #state{client_process=ClientPid,
+                              timeout=Timeout} = State) ->
+    {Packet, Rest} = protocol:decode_packet(RawData),
+    %% error_logger:info_msg("got packet ~p~n", [Packet]),
+    case Packet of
+        {stage2, _} ->
+            ClientPid ! Packet;
+        {stage4, _} ->
+            ClientPid ! Packet;
+        {heartbeat} ->
+            hi_heartbeat ! heartbeat;
+        {impacket, {{_,_,ack,Seq},_,_} = IMPacket} ->
+            case hi_state:get(Seq) of
+                undefined ->
+                    ClientPid ! {impacket, IMPacket};
+                {Pid, Ref} ->
+                    Pid ! {impacket_ack, Ref, IMPacket}
+            end;
+        {impacket, {_, _, _} = IMPacket} ->
+            ClientPid ! {impacket, IMPacket};
+        {error, _} ->
+            io:format("impacket decode error!~n")
+    end,
+    {noreply, State#state{gathered=Rest}, Timeout}.

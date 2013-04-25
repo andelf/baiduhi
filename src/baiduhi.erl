@@ -22,9 +22,9 @@
 %%%===================================================================
 start() ->
     application:start(baiduhi),
-    hi_event:add_handler(hi_event_logger, []),
-    hi_event:add_handler(hi_event_upgrade_handler, []),
-    hi_event:add_handler(hi_event_handler, []).
+    ok = hi_event:add_handler(hi_event_logger, []),
+    ok = hi_event:add_handler(hi_event_upgrade_handler, []),
+    ok = hi_event:add_handler(hi_event_handler, []).
 
 stop() ->
     application:stop(baiduhi).
@@ -350,6 +350,10 @@ blink(Imid) ->
         hi_client:async_impacket_requet(protocol_helper:'cm#blk'(Imid)),
     ok.
 
+typing(Imid) ->
+    {ok, {_, [{method, "typ"}, {code, _Code}|_], _}} =
+        hi_client:async_impacket_requet(protocol_helper:'cm#typ'(Imid)),
+    ok.
 
 %% only useable for baiduer. fuck.
 is_baiduer(baiduid, Baiduid) ->

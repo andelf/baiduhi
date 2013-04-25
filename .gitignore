@@ -6,4 +6,5 @@ priv
 *.plt
 src/PKCS-1.asn1db
 src/PKCS-1.erl
-
+include/PKCS-1.hrl
+erl_crash.dump

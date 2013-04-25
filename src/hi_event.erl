@@ -11,7 +11,7 @@
 %% API
 -export([start_link/0, add_handler/2, delete_handler/2]).
 
--export([user_login_ready/0, contact_notify/2, text_msg_notify/4, msg_notify/4]).
+-export([user_login_ready/1, contact_notify/2, text_msg_notify/4, msg_notify/4]).
 %% friend
 -export([friend_add_notify/2, friend_change/0]).
 %% group
@@ -39,8 +39,8 @@ delete_handler(Handler, Args) ->
 %% API functions
 
 %% 约定, 一般消息名为 Command_Method
-user_login_ready() ->
-    gen_event:notify(?SERVER, user_login_ready).
+user_login_ready(Imid) ->
+    gen_event:notify(?SERVER, {user_login_ready, Imid}).
 
 contact_notify(Imid, What) ->
     gen_event:notify(?SERVER, {contact_notify, Imid, What}).
