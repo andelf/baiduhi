@@ -90,6 +90,16 @@
       {uid, hi_state:uid()}],
      []}.
 
+'friend#set'(Imid, Monicker) ->
+    {{friend, "1.0", request, hi_state:seq()},
+     [{method, "set"},
+      {uid, hi_state:uid()}],
+     util:tuple_to_xml(
+       {friend_set, [],
+        [{friend, [{imid, Imid},
+                   {monicker, Monicker}], []}]})
+    }.
+
 'friend#find'(Account) ->
     {{friend, "1.0", request, hi_state:seq()},
      [{method, "find"},
@@ -100,6 +110,15 @@
                  _Other -> 1                    % baiduid
              end}],
      []}.
+
+'friend#send_psp'(Imid, Message) ->
+    {{friend, "1.0", request, hi_state:seq()},
+     [{method, "send_psp"},
+      {uid, hi_state:uid()},
+      {to, Imid},
+      {type, "0"}],
+     Message
+    }.
 
 'friend#q_type'(Imid) ->
     {{friend, "1.0", request, hi_state:seq()},

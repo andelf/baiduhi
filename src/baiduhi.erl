@@ -147,7 +147,7 @@ query_online(Acc) ->
 
 %% friends
 
-    
+
 get_friends() ->
     get_friends(0).
 get_friends(Page) ->
@@ -192,6 +192,16 @@ find_friend(Account) ->
             {not_activated, Imid};
         402 ->
             {error, "account not exists"}
+    end.
+
+set_monicker(Imid, Monicker) ->
+    {ok,{{friend,_,ack,_},[{method,"set"},{code,Code}],[]}} =
+        hi_client:async_impacket_requet(protocol_helper:'friend#set'(Imid, Monicker)),
+    case Code of
+        200 ->
+            ok;
+        _ ->
+            {error, Code}
     end.
 
 %% 0	B的好友列表没有A

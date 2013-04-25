@@ -287,7 +287,7 @@ handle_info({impacket, {{contact, _, notify, _}, [{method, "active_notify"}|_Par
 
 handle_info({impacket, {{friend,_,notify,_},  [{method,"friend_change"}|_Params], _}}, State) ->
     hi_event:friend_change(),
-    {notify, State};
+    {noreply, State};
 
 handle_info({impacket, {{msg, _, notify, _}, [{method, "msg_ack_notify"}|_], _}}, State) ->
     {noreply, State};
