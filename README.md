@@ -15,6 +15,8 @@ Usage:
     $ ERL_LIBS=./deps erl -pa ../baiduhi/ebin -s lager
     ...
     > baiduhi:start().
+    > %% a prototype gui
+    > hi_gui:start().
 
 用法2:
 
