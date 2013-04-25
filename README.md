@@ -12,7 +12,7 @@ Usage:
 
     $ rebar get-deps
     $ rebar compile
-    $ ERL_LIBS=./deps erl -pa ../baiduhi/ebin
+    $ ERL_LIBS=./deps erl -pa ../baiduhi/ebin -s lager
     ...
     > baiduhi:start().
 
