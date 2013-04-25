@@ -3,27 +3,27 @@
 %%   lib/wx/examples/demo
 %% Differences from ex_radioBox.erl are marked with %%CHANGES
 %% See online discussion of the major changes
- 
+
 -module(hi_gui).
 -author("Doug Edmunds").
 -behaviour(wx_object).
- 
+
 %%CHANGES -- added start/0, removed start/1
- 
+
 -export([start/0, init/1, terminate/2,  code_change/3, handle_cast/2,
 	 handle_info/2, handle_call/3, handle_event/2]).
- 
+
 -include_lib("wx/include/wx.hrl").
 
--define(ID_CHAT_WIN, 20). 
 -record(state,
 	{
 	  parent,
 	  config,
 	  chat_win,
-	  input_text
+	  input_ctl,
+          contact_list_ctl
 	}).
- 
+
 %%CHANGES -- new function start/0
 
 start() ->
@@ -33,20 +33,20 @@ start() ->
     Title = lists:flatten(io_lib:format("百度Hi - ~ts(~p)", [baiduhi:baiduid(), baiduhi:imid()])),
     Frame = wxFrame:new(Server, -1, Title, [{size,{640, 480}}]),
     io:format("Frame: ~p~n",[Frame]),
- 
+
     Config = [{parent, Frame}],
     wx_object:start_link(?MODULE, Config, []).
- 
- 
+
+
 % CHANGES -- removed function start/1
 % start(Config) ->
 %    wx_object:start_link(?MODULE, Config, []).
- 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 init(Config) ->
     hi_event:add_handler(hi_event_forwarder, self()),
     wx:batch(fun() -> do_init(Config) end).
- 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 handle_event(#wx{event = #wxCommand{type = command_radiobox_selected,
 				    cmdString = Item}},
@@ -68,10 +68,19 @@ handle_event(#wx{obj  = Checkbox,
 
 handle_event(#wx{obj  = Button,
 		 event = #wxCommand{type = command_button_clicked}},
-	     State = #state{chat_win=ChatWin}) ->
+	     State = #state{chat_win=ChatWin,input_ctl=InputCtl, contact_list_ctl=ContactCtl}) ->
+    Props = get(contact_lists),
     Label = wxButton:getLabel(Button),
-    
-    format(State#state.config,"wxButton clicked ~p\n",[Label]),
+    Text = wxTextCtrl:getValue(InputCtl),
+    wxTextCtrl:setValue(InputCtl, ""),
+    {1, [Selected]} = wxListBox:getSelections(ContactCtl),
+    Contact = lists:nth(Selected, Props),
+    Who = proplists:get_value(nickname, Contact),
+    wxHtmlWindow:appendToPage(ChatWin,
+			      io_lib:format("你对~ts说: ~ts<br />", [Who, Text])),
+    baiduhi:send_single_message(proplists:get_value(imid, Contact),
+                                Text),
+    format(State#state.config,"wxButton clicked ~p: ~p\n",[Label, Contact]),
     {noreply, State}.
 
 handle_cast(_Msg, State) ->
@@ -91,39 +100,48 @@ handle_info({text_msg_notify,Text,From,Type,ReplyTo}, State = #state{chat_win=Ch
 handle_info(Msg, State) ->
     format(State#state.config, "Got Info ~p\n",[Msg]),
     {noreply, State}.
- 
+
 handle_call(Msg, _From, State) ->
     format(State#state.config,"Got Call ~p\n",[Msg]),
     {reply, {error, nyi}, State}.
- 
+
 code_change(_, _, State) ->  %%this is just a stub
     {stop, ignore, State}.
- 
+
 terminate(_Reason, _State) ->
     wx:destroy(),
     ok.
- 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Local functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 do_init(Config) ->
     Parent = proplists:get_value(parent, Config),
     Panel = wxPanel:new(Parent, []),
- 
+
     %% Setup sizers
     MainSizer = wxBoxSizer:new(?wxVERTICAL),
     Sizer = wxBoxSizer:new(?wxHORIZONTAL),
     RightSizer = wxBoxSizer:new(?wxVERTICAL),
-    
+
     {ok, Friends} = baiduhi:get_friends(),
-    Choices = lists:map(fun(Prop) ->
-				Imid = proplists:get_value(imid, Prop),
-				{ok, Name} = baiduhi:imid_to_baiduid(Imid),
-				Name ++ "(" ++ Imid ++ ")"
-			end, Friends),
-    ListBoxSizer = wxStaticBoxSizer:new(?wxVERTICAL, Panel, 
+    Choices = begin
+                  {ok, Props} = baiduhi:query_contacts(lists:map(fun(Prop) ->
+                                                                         proplists:get_value(imid, Prop)
+                                                                 end, Friends)),
+                  put(contact_lists, Props),
+                  lists:map(fun(Prop) ->
+                                    Imid = proplists:get_value(imid, Prop),
+                                    Id = proplists:get_value(baiduid, Prop),
+                                    Nick = proplists:get_value(nickname, Prop),
+                                    erlang:put(Imid, {Id, Nick}),
+                                    Nick ++ "(" ++ Id ++ ")"
+                            end, Props)
+              end,
+    ListBoxSizer = wxStaticBoxSizer:new(?wxVERTICAL, Panel,
 					[{label, "我的基友"}]),
-    ListBox = wxListBox:new(Panel, 1, [{size, {-1,400}},
+    %% fake 0th item
+    ListBox = wxListBox:new(Panel, 1, [{size, {100,400}},
 				       {choices, ["请选择你的基友"|Choices]}]),
 				       %%{style, ?wxLB_MULTIPLE}]),
     wxListBox:setToolTip(ListBox, "我的基友列表"),
@@ -136,7 +154,7 @@ do_init(Config) ->
     %% RadioButtonSizer = create_radio_buttons(Panel),
     {ChatWinSizer, ChatWin} = create_chatwindow(Panel),
     {TextSizer, TextCtrl} = create_textbox(Panel),
- 
+
     %% Add to sizers
     wxSizer:add(Sizer, ListBoxSizer),
 
@@ -145,20 +163,23 @@ do_init(Config) ->
     wxSizer:addSpacer(RightSizer, 20),
     wxSizer:add(RightSizer, TextSizer),
 
+    wxSizer:add(Sizer, wxSplitterWindow:new(Panel, []), [{flag, ?wxEXPAND},
+                                                         {proportion, 1}]),
+
     wxSizer:add(Sizer, RightSizer),
-    
+
     wxSizer:addSpacer(MainSizer, 20),
     wxSizer:add(MainSizer, Sizer),
-    
-    wxPanel:setSizer(Panel, MainSizer),
-    
-    wxFrame:show(Parent),
-    
-    {Panel, #state{parent=Panel, config=Config,
-		   chat_win=ChatWin, input_text=TextCtrl}}.
 
-create_textbox(Panel) -> 
-    TextSizer = wxStaticBoxSizer:new(?wxHORIZONTAL, Panel, 
+    wxPanel:setSizer(Panel, MainSizer),
+
+    wxFrame:show(Parent),
+
+    {Panel, #state{parent=Panel, config=Config, contact_list_ctl=ListBox,
+		   chat_win=ChatWin, input_ctl=TextCtrl}}.
+
+create_textbox(Panel) ->
+    TextSizer = wxStaticBoxSizer:new(?wxHORIZONTAL, Panel,
 				     [{label, "聊天内容"}]),
     TextCtrl = wxTextCtrl:new(Panel, 3, [{size, {300,50}},
 					 {value, "这里输入你的聊天内容"},
@@ -168,7 +189,7 @@ create_textbox(Panel) ->
     wxSizer:add(TextSizer, TextCtrl, [{flag, ?wxALL},{proportion, 1}]),
     wxSizer:add(TextSizer, B10),
     {TextSizer, TextCtrl}.
-    
+
 
 create_chatwindow(Panel) ->
     ChatWinSizer = wxStaticBoxSizer:new(?wxVERTICAL, Panel,
@@ -181,4 +202,3 @@ create_chatwindow(Panel) ->
 format(_Config, Str, Args) ->
     io:format(Str,Args),
     ok.
-
