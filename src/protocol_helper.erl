@@ -22,24 +22,26 @@
 
 'login#login'({V_Url, V_Time, V_Period, V_Code}, DynamicPassword) ->
     VerifyHeaders = [{v_url, V_Url},
-                      {v_time, V_Time},
-                      {v_period, V_Period},
-                      {v_code, V_Code}],
+                     {v_time, V_Time},
+                     {v_period, V_Period},
+                     {v_code, V_Code},
+                     {priority, 20}],
     'login#login'(VerifyHeaders, DynamicPassword);
 'login#login'(VerifyHeaders, DynamicPassword) ->
     Params = [{method, "login"}|VerifyHeaders],
-    Timestamp = ?TO_STRING(util:timestamp()),
     Body = util:tuple_to_xml(
              {login, [], [{user, [{account, hi_state:get(username)},
                                   {password, DynamicPassword},
-                                  {localtime, Timestamp},
-                                  {imversion, "2,1,0,1"}], []}]}),
-    {{login, "3.0", request, hi_state:seq()}, Params, Body}.
+                                  {imversion, "2,3,0,0"},
+                                  {redirect_times, 0},
+                                  {priority, 20},
+                                  {platform, "android"},
+                                  {client_type, 4}], []}]}),
+    {{login, "4.5", request, hi_state:seq()}, Params, Body}.
 
 'login#loginout'() ->
     {{login, "1.0", request, hi_state:seq()},
-     [{method, "loginout"}],
-     ""}.
+     [{method, "loginout"}], ""}.
 
 %% VerifyCodeUnknown       = 0,
 %% VerifyCodeLogin			= 1,//登录验证码, uid=0
@@ -53,6 +55,7 @@
 %% VerifyCodeQuitGroup	= 9,//退出群
 %% VerifyCodeSendEmail	= 10,//发送 email
 %% VerifyCodeTmpSession = 11//发送临时会话消息,需要带uid2:
+%% [12] = VerifyCodeMsgRefuse;
 'security#verify'(login) ->
     {{security, "1.0", request, hi_state:seq()},
      [{method, "verify"}, {uid, 0}, {type, 1}, {lid, hi_state:get(username)}],

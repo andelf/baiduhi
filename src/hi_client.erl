@@ -88,7 +88,7 @@ async_impacket_requet({{_,_,request,Seq},_,_} = ImPacket) ->
 %% @end
 %%--------------------------------------------------------------------
 init(Config) ->
-    {username, Username} = lists:keyfind(username, 1, Config),
+    Username = proplists:get_value(username, Config),
     %% logger:log(normal, "username=~s password=******", [Username]),
     {ok, Sock} = gen_tcp:connect("119.75.214.21", 443, [{active, false}, binary]),
     {ok, #state{sock=Sock, username=Username, config=Config, stage=initial}, 0}.
@@ -144,7 +144,7 @@ handle_cast(_Msg, State) ->
 %% ------------- login process ----------------------
 %% initial login stage1
 handle_info(timeout, #state{sock=Sock, config=Config, stage=initial} = State) ->
-    {username, Username} = lists:keyfind(username, 1, Config),
+    Username = proplists:get_value(username, Config),
     ok = gen_tcp:controlling_process(Sock, hi_dispatcher:get_pid()),
     hi_dispatcher:set_client(self()),
     hi_dispatcher:set_sock(Sock),
@@ -179,16 +179,16 @@ handle_info({stage4, {Seed, _KeepAliveSpace, S4Data}},
 %% login:login
 handle_info({impacket, {{security, _, ack, _}, _, Xml}},
             #state{config=Config, stage=on_security_response} = State) ->
-    {password, Password} = lists:keyfind(password, 1, Config),
-    {seed, Seed} = lists:keyfind(seed, 1, Config),
+    Password = proplists:get_value(password, Config),
+    Seed = proplists:get_value(seed, Config),
     [{verify, RequestParams, _}] = util:xml_to_tuple(Xml),
-    {v_url, V_Url} = lists:keyfind(v_url, 1, RequestParams),
-    {v_time, V_Time} = lists:keyfind(v_time, 1, RequestParams),
-    {v_period, V_Period} = lists:keyfind(v_period, 1, RequestParams),
-    case lists:keyfind(v_code, 1, RequestParams) of
+    V_Url = proplists:get_value(v_url, RequestParams),
+    V_Time = proplists:get_value(v_time, RequestParams),
+    V_Period = proplists:get_value(v_period, RequestParams),
+    case proplists:lookup(v_code, RequestParams) of
         {v_code, V_Code} ->
             error_logger:info_msg("v_code: ~s", [V_Code]);
-        false ->
+        none ->
             io:format("v_code url: http://vcode.im.baidu.com/cgi-bin/genimg?~s~n", [V_Url]),
             V_Code = io:get_chars("plz input code>", 4)
     end,
@@ -223,17 +223,17 @@ handle_info({impacket, {{user, _, ack, _}, [{method,"login_ready"},{code,200}|_]
 %% ----------------------------------------
 handle_info({impacket, {{msg, _, notify, _}, [{method,"msg_notify"}|Params], Xml}},
             State) ->
-    {from, From} = lists:keyfind(from, 1, Params),
+    From = proplists:get_value(from, Params),
     %% type=2 group, type=3 multi
-    {type, Type} = lists:keyfind(type, 1, Params),
+    Type = proplists:get_value(type, Params),
     %% 联系人ID|群ID|临时群ID
-    {to, To} = lists:keyfind(to, 1, Params),
-    {msgid, MsgId} = lists:keyfind(msgid, 1, Params),
+    To = proplists:get_value(to, Params),
+    MsgId = proplists:get_value(msgid, Params),
     %% ack
-    case lists:keyfind(waitack, 1, Params) of
+    case proplists:lookup(waitack, Params) of
         {waitack, _Timeout} ->
             self() ! {sendpkt, protocol_helper:'msg#msg_ack'(Type, From, MsgId)};
-        false -> ok
+        none -> ok
     end,
     ReplyTo = if Type =:= 1 -> From; true -> To end,
     IncomeTextMessage = xmerl_msg:xml_to_list(Xml),
@@ -245,7 +245,7 @@ handle_info({impacket, {{msg, _, notify, _}, [{method,"msg_notify"}|Params], Xml
 
 %% 临时会话
 handle_info({impacket, {{msg,_,request,_}, [{method,"tmsg_request"}|Params], Xml}}, State) ->
-    {from, From} = lists:keyfind(from, 1, Params),
+    From = proplists:get_value(from, Params),
     Type = 4,                                   % fake as type 4
     IncomeTextMessage = xmerl_msg:xml_to_list(Xml),
     [IncomeMessage] = util:xml_to_tuple(Xml),
@@ -294,8 +294,8 @@ handle_info({impacket, {{msg, _, notify, _}, [{method, "msg_ack_notify"}|_], _}}
 
 handle_info({impacket, {{friend, _, notify, _}, [{method,"add_notify"}|_], Xml}}, State) ->
     [{add_notify, Attrs, _}] = util:xml_to_tuple(Xml),
-    {imid, From} = lists:keyfind(imid, 1, Attrs),
-    {request_note, RequestNote} = lists:keyfind(request_note, 1, Attrs),
+    From = proplists:get_value(imid, Attrs),
+    RequestNote = proplists:get_value(request_note, Attrs),
     hi_event:friend_add_notify(From, RequestNote),
     {noreply, State};
 
@@ -305,11 +305,11 @@ handle_info({impacket,{{login,_,notify,_},[{method,"kickout"}|_], _}}, State) ->
 
 %% handle other request
 handle_info({impacket, {{cm, _, request, _}, [{method,"blk"}|Params], _}}, State) ->
-    {uid, From} = lists:keyfind(uid, 1, Params),
+    From = proplists:get_value(uid, Params),
     hi_event:blink(From),
     {noreply, State};
 handle_info({impacket, {{cm, _, request, _}, [{method, "typ"}|Params], _}}, State) ->
-    {from, From} = lists:keyfind(from, 1, Params),
+    From = proplists:get_value(uid, Params),
     hi_event:typing(From),
     {noreply, State};
 handle_info({impacket, {{cm, _, request, _}, [{method, "scene"}|_], _}}, State) ->

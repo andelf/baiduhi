@@ -195,8 +195,9 @@ decode_impacket(IMPacket) ->
     {{Command, Version, Type, Seq}, Params, Body}.
 
 
-build_dynamic_password(Password, Seed) ->
-    PassComb = util:to_hex_string(crypto:md5(Password)) ++ Seed,
+build_dynamic_password(Password, _Seed) ->
+    %% update Fri Nov 22 13:18:14 2013, Seed become useless
+    PassComb = util:to_hex_string(crypto:md5(Password)),
     util:to_hex_string(crypto:md5(PassComb)).
 
 
